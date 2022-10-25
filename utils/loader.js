@@ -4,7 +4,7 @@ function Loader(type) {
             return {
                 forge: {
                     metaData: 'https://files.minecraftforge.net/net/minecraftforge/forge/maven-metadata.json',
-                    meta: 'https://files.minecraftforge.net/net/minecraftforge/forge/${version}/meta.json'
+                    install: 'https://maven.minecraftforge.net/net/minecraftforge/forge/${version}/forge-${version}-installer.jar',
                 }
             }
             break;

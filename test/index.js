@@ -6,7 +6,7 @@ async function main() {
         loader: {
             type: 'forge',
             version: '1.19.2',
-            build: '1.19.2-43.1.43'
+            build: '1.19.2-43.1.47'
         }
     });
 
