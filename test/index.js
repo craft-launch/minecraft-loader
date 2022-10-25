@@ -5,8 +5,8 @@ async function main() {
     let loader = new loaderDownloader({
         loader: {
             type: 'forge',
-            version: '1.19.2',
-            build: '1.19.2-43.1.47'
+            version: '1.12.2',
+            build: 'latest'
         }
     });
 
