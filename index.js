@@ -38,6 +38,9 @@ class index {
         if (!metaData) return { error: { message: 'Invalid build' } };
 
         forgeURL = forgeURL.replace(/\${version}/g, metaData);
+        let forge = await nodeFetch(forgeURL).then(res => res.buffer());
+        if(!fs.existsSync(this.options.path)) fs.mkdirSync(this.options.path, { recursive: true });
+        fs.writeFileSync(`${this.options.path}/forge-${metaData}-installer.jar`, forge);
 
         return forgeURL;
     }
