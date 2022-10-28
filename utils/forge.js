@@ -1,7 +1,10 @@
 const nodeFetch = require('node-fetch');
-const crypto = require('crypto');
+const Seven = require('node-7z');
+const sevenPath = require('7zip-bin').path7za;
 const path = require('path');
 const fs = require('fs');
+
+const { getFileHash } = require('./utils');
 
 module.exports = class index {
     constructor(options = {}) {
@@ -31,29 +34,42 @@ module.exports = class index {
         if (!metaData) return { error: { message: 'Invalid build' } };
 
         forgeURL = forgeURL.replace(/\${version}/g, metaData);
+        let urlMeta = Loader[Object.entries(Loader)[0][0]].meta.replace(/\${build}/g, metaData);
         let forge = await nodeFetch(forgeURL).then(res => res.buffer());
+        let meta = await nodeFetch(urlMeta).then(res => res.json());
+
         let pathFolder = path.resolve(this.options.path, 'forge');
         let filePath = path.resolve(pathFolder, `forge-${metaData}-installer.jar`);
         if (!fs.existsSync(pathFolder)) fs.mkdirSync(pathFolder, { recursive: true });
         fs.writeFileSync(filePath, forge);
 
-        let hash = await this.getFileHash(filePath, 'md5');
-        console.log(hash);
-        return filePath;
+        let hashFileDownload = await getFileHash(filePath, 'md5');
+        let hashFileOrigin = meta?.classifiers?.installer?.jar;
+        if (hashFileDownload === hashFileOrigin) return filePath;
+        else return { error: { message: 'Invalid hash' } };
     }
 
-    async getFileHash(filePath, algorithm = 'sha1') {
-        const shasum = crypto.createHash(algorithm);
+    async installProfile(pathInstaller) {
+        let forgeJSON = {}
+        let pathExtract = path.resolve(this.options.path, 'temp');
         
-        const s = fs.ReadStream(filePath);
-        s.on('data', data => {
-            shasum.update(data);
-        });
-        const hash = await new Promise(resolve => {
-            s.on('end', () => {
-                resolve(shasum.digest('hex'));
+        let forgeJsonOrigin = await new Promise(resolve => {
+            Seven.extractFull(pathInstaller, pathExtract, {
+                $bin: sevenPath,
+                recursive: true,
+                $cherryPick: 'install_profile.json'
+            }).on('end', () => {
+                let file = fs.readFileSync(path.resolve(pathExtract, 'install_profile.json'));
+                fs.rmSync(pathExtract, { recursive: true });
+                resolve(JSON.parse(file));
             });
-        });
-        return hash;
-    };
+        })
+
+        if (forgeJsonOrigin.install) {
+            forgeJSON.install = forgeJsonOrigin.install;
+            forgeJSON.version = forgeJsonOrigin.versionInfo;
+        }
+
+        return forgeJSON;
+    }
 }

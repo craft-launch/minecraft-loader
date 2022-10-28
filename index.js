@@ -17,9 +17,11 @@ class index {
 
     async forge(Loader) {
         let forge = new Forge(this.options);
-        let installer = await forge.downloadInstaller(Loader);
-        if (installer.error) return installer;
-        return installer;
+        let pathInstaller = await forge.downloadInstaller(Loader);
+        if (pathInstaller.error) return pathInstaller;
+        
+        let installProfile = await forge.installProfile(pathInstaller);
+        return installProfile;
     }
 
     async fabric(Loader) {}

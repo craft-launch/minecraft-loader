@@ -7,6 +7,7 @@ function Loader(type) {
                     meta: 'https://files.minecraftforge.net/net/minecraftforge/forge/${build}/meta.json',
                     promotions: 'https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json',
                     install: 'https://maven.minecraftforge.net/net/minecraftforge/forge/${version}/forge-${version}-installer.jar',
+                    mirror: 'https://files.minecraftforge.net/mirrors-2.0.json'
                 }
             }
             break;
