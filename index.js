@@ -1,6 +1,6 @@
-const nodeFetch = require('node-fetch');
 const loader = require('./utils/loader');
-const fs = require('fs');
+const Forge = require('./utils/forge');
+
 
 class index {
     constructor(options = {}) {
@@ -16,33 +16,10 @@ class index {
     }
 
     async forge(Loader) {
-        let metaData = (await nodeFetch(Loader[Object.entries(Loader)[0][0]].metaData).then(res => res.json()))[this.options.loader.version];
-        let forgeURL = Loader[Object.entries(Loader)[0][0]].install
-        if (!metaData) return { error: { message: 'Invalid version' } };
-
-        let build
-        if (this.options.loader.build === 'latest') {
-            let promotions = await nodeFetch(Loader[Object.entries(Loader)[0][0]].promotions).then(res => res.json());
-            promotions = promotions.promos[`${this.options.loader.version}-latest`];
-            build = metaData.find(build => build.includes(promotions))
-        } else if (this.options.loader.build === 'recommended') {
-            let promotion = await nodeFetch(Loader[Object.entries(Loader)[0][0]].promotions).then(res => res.json());
-            let promotions = promotion.promos[`${this.options.loader.version}-recommended`];
-            if (!promotions) promotions = promotion.promos[`${this.options.loader.version}-latest`];
-            build = metaData.find(build => build.includes(promotions))
-        } else {
-            build = this.options.loader.build;
-        }
-
-        metaData = metaData.filter(b => b === build)[0];
-        if (!metaData) return { error: { message: 'Invalid build' } };
-
-        forgeURL = forgeURL.replace(/\${version}/g, metaData);
-        let forge = await nodeFetch(forgeURL).then(res => res.buffer());
-        if(!fs.existsSync(this.options.path)) fs.mkdirSync(this.options.path, { recursive: true });
-        fs.writeFileSync(`${this.options.path}/forge-${metaData}-installer.jar`, forge);
-
-        return forgeURL;
+        let forge = new Forge(this.options);
+        let installer = await forge.downloadInstaller(Loader);
+        if (installer.error) return installer;
+        return installer;
     }
 
     async fabric(Loader) {}

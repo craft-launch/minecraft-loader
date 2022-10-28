@@ -7,12 +7,11 @@ async function main() {
         loader: {
             type: 'forge',
             version: '1.12.2',
-            build: 'latest'
+            build: '1.12.2-14.23.5.2838'
         }
     });
 
     console.log(await loader.download());
-
 }
 
 main();
