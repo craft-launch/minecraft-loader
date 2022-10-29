@@ -72,6 +72,7 @@ module.exports = class index {
             });
         })
         
+        if(!forgeJsonOrigin) return { error: { message: 'Invalid forge installer' } };
         if (forgeJsonOrigin.install) {
             forgeJSON.install = forgeJsonOrigin.install;
             forgeJSON.version = forgeJsonOrigin.versionInfo;
