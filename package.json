@@ -1,8 +1,13 @@
 {
     "name": "forge-fabric-downloder",
-    "version": "1.0.0",
+    "version": "0.0.0",
     "description": "",
     "main": "index.js",
+    "files": [
+        "utils/**",
+        "index.js",
+        "README.md"
+    ],
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
