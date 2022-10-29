@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const checkNetworkStatus = require('./utils/check-network-status');
 const loader = require('./utils/loader');
 const Forge = require('./utils/forge');
 
@@ -11,10 +12,11 @@ class index {
     }
 
     async download() {
+        let networkStatus = await checkNetworkStatus();
+        if (!networkStatus) return { error: { message: 'Network error' } };
         let Loader = loader.Loader(this.options.loader.type);
         if (Loader.error) return Loader;
         let json = await this[Object.entries(Loader)[0][0]](Loader)
-
         return json;
     }
 
