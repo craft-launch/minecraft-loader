@@ -12,7 +12,7 @@ class index {
     }
 
     async download() {
-        let networkStatus = await checkNetworkStatus();
+        let networkStatus = await checkNetworkStatus(this.options.timeout);
         if (!networkStatus) return { error: { message: 'Network error' } };
         let Loader = loader.Loader(this.options.loader.type);
         if (Loader.error) return Loader;
@@ -34,7 +34,7 @@ class index {
         let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);    
         fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile, null, 4));
 
-        return installProfile;
+        return forgeJSONPath;
     }
 
     async fabric(Loader) {}

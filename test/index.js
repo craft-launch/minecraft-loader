@@ -4,6 +4,7 @@ const loaderDownloader = require('../index');
 async function main() {
     let loader = new loaderDownloader({
         path: './.MC',
+        timeout: 5000,
         loader: {
             type: 'forge',
             version: '1.12.2',
