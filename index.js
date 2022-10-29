@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 const loader = require('./utils/loader');
 const Forge = require('./utils/forge');
 
@@ -17,10 +20,18 @@ class index {
 
     async forge(Loader) {
         let forge = new Forge(this.options);
-        let pathInstaller = await forge.downloadInstaller(Loader);
-        if (pathInstaller.error) return pathInstaller;
+        let forgeInstaller = await forge.downloadInstaller(Loader);
+        if (forgeInstaller.error) return forgeInstaller;
         
-        let installProfile = await forge.installProfile(pathInstaller);
+        let installProfile = await forge.installProfile(forgeInstaller.filePath);
+        if (installProfile.error) return installProfile;
+
+        let versionFolder = path.resolve(this.options.path, 'versions', `forge-${forgeInstaller.metaData}`);
+        if (!fs.existsSync(versionFolder)) fs.mkdirSync(versionFolder, { recursive: true });
+
+        let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);    
+        fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile, null, 4));
+
         return installProfile;
     }
 

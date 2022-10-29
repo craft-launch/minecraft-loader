@@ -45,7 +45,7 @@ module.exports = class index {
 
         let hashFileDownload = await getFileHash(filePath, 'md5');
         let hashFileOrigin = meta?.classifiers?.installer?.jar;
-        if (hashFileDownload === hashFileOrigin) return filePath;
+        if (hashFileDownload === hashFileOrigin) return { filePath, metaData };
         else return { error: { message: 'Invalid hash' } };
     }
 
@@ -68,6 +68,8 @@ module.exports = class index {
         if (forgeJsonOrigin.install) {
             forgeJSON.install = forgeJsonOrigin.install;
             forgeJSON.version = forgeJsonOrigin.versionInfo;
+        } else {
+            forgeJSON.install = forgeJsonOrigin;
         }
 
         return forgeJSON;
