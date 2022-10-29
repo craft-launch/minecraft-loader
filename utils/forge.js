@@ -41,7 +41,9 @@ module.exports = class index {
         let meta = await nodeFetch(urlMeta).then(res => res.json());
 
         if (!fs.existsSync(filePath)) {
-            let forge = await nodeFetch(forgeURL).then(res => res.buffer());
+            let forge = await nodeFetch(forgeURL)
+            if (forge.status !== 200) return { error: { message: 'Invalid forge installer' } };
+            forge = await forge.buffer();
             if (!fs.existsSync(pathFolder)) fs.mkdirSync(pathFolder, { recursive: true });
             fs.writeFileSync(filePath, forge);
         }
