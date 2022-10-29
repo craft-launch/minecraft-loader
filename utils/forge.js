@@ -35,18 +35,22 @@ module.exports = class index {
 
         forgeURL = forgeURL.replace(/\${version}/g, metaData);
         let urlMeta = Loader[Object.entries(Loader)[0][0]].meta.replace(/\${build}/g, metaData);
-        let forge = await nodeFetch(forgeURL).then(res => res.buffer());
-        let meta = await nodeFetch(urlMeta).then(res => res.json());
 
         let pathFolder = path.resolve(this.options.path, 'forge');
         let filePath = path.resolve(pathFolder, `forge-${metaData}-installer.jar`);
-        if (!fs.existsSync(pathFolder)) fs.mkdirSync(pathFolder, { recursive: true });
-        fs.writeFileSync(filePath, forge);
+        let meta = await nodeFetch(urlMeta).then(res => res.json());
+
+        if (!fs.existsSync(filePath)) {
+            let forge = await nodeFetch(forgeURL).then(res => res.buffer());
+            if (!fs.existsSync(pathFolder)) fs.mkdirSync(pathFolder, { recursive: true });
+            fs.writeFileSync(filePath, forge);
+        }
 
         let hashFileDownload = await getFileHash(filePath, 'md5');
         let hashFileOrigin = meta?.classifiers?.installer?.jar;
-        if (hashFileDownload === hashFileOrigin) return { filePath, metaData };
-        else return { error: { message: 'Invalid hash' } };
+
+        if (hashFileDownload !== hashFileOrigin) return { error: { message: 'Invalid hash' } };
+        return { filePath, metaData }
     }
 
     async installProfile(pathInstaller) {
