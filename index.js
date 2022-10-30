@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const checkNetworkStatus = require('./utils/check-network-status');
+const { checkNetworkStatus } = require('./utils/utils');
 const loader = require('./utils/loader');
 const Forge = require('./utils/forge');
 

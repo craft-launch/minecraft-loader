@@ -9,7 +9,7 @@ async function getFileHash(filePath, algorithm = 'sha1') {
     file.on('data', data => {
         shasum.update(data);
     });
-    
+
     let hash = await new Promise(resolve => {
         file.on('end', () => {
             resolve(shasum.digest('hex'));
@@ -18,6 +18,13 @@ async function getFileHash(filePath, algorithm = 'sha1') {
     return hash;
 };
 
+async function checkNetworkStatus(timeout = 10000) {
+    const networkStatus = await nodeFetch('https://google.com', { timeout }).then(() => true).catch(() => false);
+    return networkStatus;
+}
+
+
 module.exports = {
-    getFileHash: getFileHash
+    getFileHash: getFileHash,
+    checkNetworkStatus: checkNetworkStatus
 }
