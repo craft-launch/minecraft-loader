@@ -4,7 +4,7 @@ const sevenPath = require('7zip-bin').path7za;
 const path = require('path');
 const fs = require('fs');
 
-const { getFileHash } = require('./utils');
+const { getFileHash, getPathLibraries } = require('./utils');
 
 module.exports = class index {
     constructor(options = {}) {
@@ -83,5 +83,32 @@ module.exports = class index {
         }
 
         return forgeJSON;
+    }
+
+    async jarPathInstall(forgeJSON, pathInstaller) {
+        let pathExtract = path.resolve(this.options.path, 'temp');
+
+        if(forgeJSON.install.filePath) {
+            let forgeJarPath = await new Promise(resolve => {
+                Seven.extractFull(pathInstaller, pathExtract, {
+                    $bin: sevenPath,
+                    recursive: true,
+                    $cherryPick: forgeJSON.install.filePath
+                }).on('end', async() => {
+                    let fileInfo = await getPathLibraries(forgeJSON.install.path)
+                    let file = fs.readFileSync(path.resolve(pathExtract, forgeJSON.install.filePath));
+                    let pathFile = path.resolve(this.options.path, fileInfo.path)
+
+                    fs.rmSync(pathExtract, { recursive: true });
+                    if(!fs.existsSync(pathFile)) fs.mkdirSync(pathFile, { recursive: true });
+                    
+                    fs.writeFileSync(path.resolve(pathFile, fileInfo.name), file);
+                    resolve(fileInfo);
+                });
+            })
+            return forgeJarPath;
+        } else if (forgeJSON.install.path) {
+
+        }
     }
 }

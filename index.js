@@ -24,17 +24,19 @@ class index {
         let forge = new Forge(this.options);
         let forgeInstaller = await forge.downloadInstaller(Loader);
         if (forgeInstaller.error) return forgeInstaller;
-        
+
         let installProfile = await forge.installProfile(forgeInstaller.filePath);
         if (installProfile.error) return installProfile;
 
         let versionFolder = path.resolve(this.options.path, 'versions', `forge-${forgeInstaller.metaData}`);
         if (!fs.existsSync(versionFolder)) fs.mkdirSync(versionFolder, { recursive: true });
 
-        let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);    
+        let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);
         fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile, null, 4));
 
-        return forgeJSONPath;
+        let forgeJarPath = forge.jarPathInstall(installProfile, forgeInstaller.filePath);
+
+        return forgeJarPath;
     }
 
     async fabric(Loader) {}

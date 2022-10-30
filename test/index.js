@@ -7,8 +7,9 @@ async function main() {
         timeout: 5 * 1000,
         loader: {
             type: 'forge',
-            version: '1.12.2',
-            build: '1.12.2-14.23.5.2838'
+            version: '1.13.2',
+            build: '1.13.2-25.0.223'
+            // build: '1.12.2-14.23.5.2838'
         }
     });
 
