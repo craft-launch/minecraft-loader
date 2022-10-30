@@ -23,8 +23,18 @@ async function checkNetworkStatus(timeout = 10000) {
     return networkStatus;
 }
 
+async function getPathLibraries(main) {
+    let libSplit = main.split(':')
+    let libName = `${libSplit[1]}-${libSplit[2]}.jar`
+    let pathLib = `${libSplit[0].replace(/\./g, '/')}/${libSplit[1]}/${libSplit[2]}`
+    return {
+        path: pathLib,
+        name: libName
+    };
+}
 
 module.exports = {
     getFileHash: getFileHash,
-    checkNetworkStatus: checkNetworkStatus
+    checkNetworkStatus: checkNetworkStatus,
+    getPathLibraries: getPathLibraries
 }
