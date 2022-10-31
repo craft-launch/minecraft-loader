@@ -91,6 +91,8 @@ module.exports = class index {
 
             if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
             fs.copyFileSync(file, `${pathFileDest}/${fileInfo.name}`);
+
+            fs.rmSync(pathExtract, { recursive: true });
             return skipForgeFilter;
         } else if (forgeJSON.install.path) {
             let fileInfo = await getPathLibraries(forgeJSON.install.path)
@@ -112,5 +114,14 @@ module.exports = class index {
             skipForgeFilter = false
             return skipForgeFilter;
         }
+    }
+
+    async installLibraries(forgeJSON) {
+        let { libraries } = forgeJSON.version ? forgeJSON.version : forgeJSON.install;
+
+
+
+
+        return libraries
     }
 }
