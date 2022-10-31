@@ -116,12 +116,26 @@ module.exports = class index {
         }
     }
 
-    async installLibraries(forgeJSON) {
+    async installLibraries(forgeJSON, skipForgeFilter) {
         let { libraries } = forgeJSON.version ? forgeJSON.version : forgeJSON.install;
 
-
-
-
         return libraries
+    }
+
+    async patching(forgeJSON, pathInstaller) {
+        let pathExtract = path.resolve(this.options.path, 'temp');
+        let libraries = forgeJSON.version ? forgeJSON.version.libraries : forgeJSON.install.libraries;
+
+        if (forgeJSON.install.processors) {
+            await extractAll(pathInstaller, pathExtract, { $cherryPick: `data/client.lzma` });
+            let client = path.resolve(pathExtract, 'data/client.lzma');
+            let universalPath = libraries.find(v => v.name.includes('net.minecraftforge:forge'))
+            let fileInfo = await getPathLibraries(universalPath.name, '-clientdata' , '.lzma')
+            let pathFileDest = path.resolve(this.options.path, fileInfo.path)
+
+            if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
+            fs.copyFileSync(client, `${pathFileDest}/${fileInfo.name}`);
+            fs.rmSync(pathExtract, { recursive: true });
+        }
     }
 }

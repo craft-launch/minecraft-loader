@@ -26,13 +26,14 @@ async function checkNetworkStatus(timeout = 10000) {
     return networkStatus;
 }
 
-async function getPathLibraries(main) {
+async function getPathLibraries(main, nativeString, forceExt) {
     let libSplit = main.split(':')
-    let libName = `${libSplit[1]}-${libSplit[2]}.jar`
+    let fileName = libSplit[3] ? `${libSplit[2]}-${libSplit[3]}` : libSplit[2];
+    let finalFileName = fileName.includes('@') ? fileName.replace('@', '.') : `${fileName}${nativeString || ''}${forceExt || '.jar'}`;
     let pathLib = `${libSplit[0].replace(/\./g, '/')}/${libSplit[1]}/${libSplit[2]}`
     return {
         path: pathLib,
-        name: libName
+        name: `${libSplit[1]}-${finalFileName}`
     };
 }
 

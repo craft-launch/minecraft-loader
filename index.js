@@ -36,7 +36,9 @@ class index {
 
         let forgeJarPath = forge.jarPathInstall(installProfile, forgeInstaller.filePath);
 
-        return forgeJarPath;
+        await forge.patching(installProfile, forgeInstaller.filePath);
+
+        return forgeJSONPath;
     }
 
     async fabric(Loader) {}
