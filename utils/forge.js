@@ -1,10 +1,8 @@
 const nodeFetch = require('node-fetch');
-const Seven = require('node-7z');
-const sevenPath = require('7zip-bin').path7za;
 const path = require('path');
 const fs = require('fs');
 
-const { getFileHash, getPathLibraries } = require('./utils');
+const { getFileHash, getPathLibraries, extractAll } = require('./utils');
 
 module.exports = class index {
     constructor(options = {}) {
@@ -61,18 +59,13 @@ module.exports = class index {
     async installProfile(pathInstaller) {
         let forgeJSON = {}
         let pathExtract = path.resolve(this.options.path, 'temp');
-        
-        let forgeJsonOrigin = await new Promise(resolve => {
-            Seven.extractFull(pathInstaller, pathExtract, {
-                $bin: sevenPath,
-                recursive: true,
-                $cherryPick: 'install_profile.json'
-            }).on('end', () => {
-                let file = fs.readFileSync(path.resolve(pathExtract, 'install_profile.json'));
-                fs.rmSync(pathExtract, { recursive: true });
-                resolve(JSON.parse(file));
-            });
-        })
+
+        await extractAll(pathInstaller, pathExtract, { $cherryPick: 'install_profile.json' });
+
+        let file = fs.readFileSync(path.resolve(pathExtract, 'install_profile.json'));
+        fs.rmSync(pathExtract, { recursive: true });
+        let forgeJsonOrigin = JSON.parse(file);
+      
         
         if(!forgeJsonOrigin) return { error: { message: 'Invalid forge installer' } };
         if (forgeJsonOrigin.install) {
@@ -87,28 +80,37 @@ module.exports = class index {
 
     async jarPathInstall(forgeJSON, pathInstaller) {
         let pathExtract = path.resolve(this.options.path, 'temp');
+        let skipForgeFilter = true
 
         if(forgeJSON.install.filePath) {
-            let forgeJarPath = await new Promise(resolve => {
-                Seven.extractFull(pathInstaller, pathExtract, {
-                    $bin: sevenPath,
-                    recursive: true,
-                    $cherryPick: forgeJSON.install.filePath
-                }).on('end', async() => {
-                    let fileInfo = await getPathLibraries(forgeJSON.install.path)
-                    let file = fs.readFileSync(path.resolve(pathExtract, forgeJSON.install.filePath));
-                    let pathFile = path.resolve(this.options.path, fileInfo.path)
+            let fileInfo = await getPathLibraries(forgeJSON.install.path)
+            await extractAll(pathInstaller, pathExtract, { $cherryPick: forgeJSON.install.filePath });
 
-                    fs.rmSync(pathExtract, { recursive: true });
-                    if(!fs.existsSync(pathFile)) fs.mkdirSync(pathFile, { recursive: true });
-                    
-                    fs.writeFileSync(path.resolve(pathFile, fileInfo.name), file);
-                    resolve(fileInfo);
-                });
-            })
-            return forgeJarPath;
+            let file = path.resolve(pathExtract, forgeJSON.install.filePath);
+            let pathFileDest = path.resolve(this.options.path, fileInfo.path)
+
+            if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
+            fs.copyFileSync(file, `${pathFileDest}/${fileInfo.name}`);
+            return skipForgeFilter;
         } else if (forgeJSON.install.path) {
+            let fileInfo = await getPathLibraries(forgeJSON.install.path)
+            await extractAll(pathInstaller, pathExtract, { $cherryPick: `maven/${fileInfo.path}` });
+            let listFile = fs.readdirSync(path.join(pathExtract, `maven/${fileInfo.path}`));
 
+            await Promise.all(
+                listFile.map(file => {
+                    let pathFile = path.resolve(pathExtract, `maven/${fileInfo.path}`, file)
+                    let pathFileDest = path.resolve(this.options.path, fileInfo.path)
+                    if(!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
+                    fs.copyFileSync(pathFile, `${pathFileDest}/${file}`);
+                })
+            );
+
+            fs.rmSync(pathExtract, { recursive: true });
+            return skipForgeFilter;
+        } else {
+            skipForgeFilter = false
+            return skipForgeFilter;
         }
     }
 }
