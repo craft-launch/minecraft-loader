@@ -34,7 +34,7 @@ class index {
         let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);
         fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile, null, 4));
 
-        let forgeJarPath = forge.jarPathInstall(installProfile, forgeInstaller.filePath);
+        let forgeJarPath = await forge.jarPathInstall(installProfile, forgeInstaller.filePath);
 
         await forge.patching(installProfile, forgeInstaller.filePath);
 
