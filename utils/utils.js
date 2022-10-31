@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 const nodeFetch = require('node-fetch');
+const { extractFull } = require('node-7z');
+const { path7za } = require('7zip-bin');
 const fs = require('fs');
 
 
@@ -34,8 +36,38 @@ async function getPathLibraries(main) {
     };
 }
 
+
+async function extractAll(source, destination, args = {}, funcs = {}) {
+    const extraction = extractFull(source, destination, {
+        ...args,
+        yes: true,
+        $bin: path7za,
+        $spawnOptions: { shell: true }
+    });
+
+    let extractedParentDir = null;
+    await new Promise((resolve, reject) => {
+        if (funcs.progress) {
+            extraction.on('progress', ({ percent }) => {
+                funcs.progress(percent);
+            });
+        }
+        extraction.on('data', data => {
+            if (!extractedParentDir) {
+                [extractedParentDir] = data.file.split('/');
+            }
+        });
+        extraction.on('end', () => {
+            funcs.end?.();
+            resolve(extractedParentDir);
+        });
+    });
+    return { extraction };
+};
+
 module.exports = {
     getFileHash: getFileHash,
     checkNetworkStatus: checkNetworkStatus,
-    getPathLibraries: getPathLibraries
+    getPathLibraries: getPathLibraries,
+    extractAll: extractAll
 }
