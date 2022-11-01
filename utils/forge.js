@@ -138,10 +138,31 @@ module.exports = class index {
 
         for (let lib of libraries) {
             if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) continue
-            let url
-            let libInfo = await getPathLibraries(lib.name)            
-        }
+            let libInfo = await getPathLibraries(lib.name);
+            let pathLib = path.resolve(this.options.path, 'libraries', libInfo.path);
+            let pathLibFile = path.resolve(pathLib, libInfo.name);
 
+            if (!fs.existsSync(pathLib)) fs.mkdirSync(pathLib, { recursive: true });
+
+            if (!fs.existsSync(pathLibFile)) {
+                let url = `${mirror[0]}${libInfo.path}/${libInfo.name}`;
+                let libFile = await nodeFetch(url);
+                if (libFile.status !== 200) {
+                    url = `${mirror[1]}${libInfo.path}/${libInfo.name}`;
+                    libFile = await nodeFetch(url);
+                    if (libFile.status !== 200) {
+                        if (lib.downloads?.artifact?.url) {
+                            url = lib.downloads.artifact.url;
+                            libFile = await nodeFetch(url);
+                            if (libFile.status !== 200) continue;
+                        } else continue;
+                    }
+                }
+                libFile = await libFile.buffer();
+                fs.writeFileSync(pathLibFile, libFile);
+            }
+            
+        }
         return libraries
     }
 
