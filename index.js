@@ -32,13 +32,15 @@ class index {
         if (!fs.existsSync(versionFolder)) fs.mkdirSync(versionFolder, { recursive: true });
 
         let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);
-        fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile, null, 4));
+        fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile.version, null, 4));
 
         let forgeJarPath = await forge.jarPathInstall(installProfile, forgeInstaller.filePath);
 
+        let forgeLibrariesInstall = await forge.installLibraries(installProfile, forgeJarPath);
+
         await forge.patching(installProfile, forgeInstaller.filePath);
 
-        return forgeJSONPath;
+        return installProfile.version;
     }
 
     async fabric(Loader) {}

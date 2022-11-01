@@ -39,6 +39,7 @@ async function getPathLibraries(main, nativeString, forceExt) {
 
 
 async function extractAll(source, destination, args = {}, funcs = {}) {
+    if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
     const extraction = extractFull(source, destination, {
         ...args,
         yes: true,
@@ -66,9 +67,20 @@ async function extractAll(source, destination, args = {}, funcs = {}) {
     return { extraction };
 };
 
+class eventEmitter {
+    on(event, func) {
+        this[event] = func;
+    }
+
+    emit(event, ...args) {
+        if (this[event]) this[event](...args);
+    }
+}
+
 module.exports = {
     getFileHash: getFileHash,
     checkNetworkStatus: checkNetworkStatus,
     getPathLibraries: getPathLibraries,
-    extractAll: extractAll
+    extractAll: extractAll,
+    eventEmitter: new eventEmitter
 }

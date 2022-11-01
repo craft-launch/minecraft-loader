@@ -63,18 +63,21 @@ module.exports = class index {
         await extractAll(pathInstaller, pathExtract, { $cherryPick: 'install_profile.json' });
 
         let file = fs.readFileSync(path.resolve(pathExtract, 'install_profile.json'));
-        fs.rmSync(pathExtract, { recursive: true });
         let forgeJsonOrigin = JSON.parse(file);
       
         
-        if(!forgeJsonOrigin) return { error: { message: 'Invalid forge installer' } };
+        if (!forgeJsonOrigin) return { error: { message: 'Invalid forge installer' } };
         if (forgeJsonOrigin.install) {
             forgeJSON.install = forgeJsonOrigin.install;
             forgeJSON.version = forgeJsonOrigin.versionInfo;
         } else {
             forgeJSON.install = forgeJsonOrigin;
+            await extractAll(pathInstaller, pathExtract, { $cherryPick: path.basename(forgeJSON.install.json) })
+            let file = fs.readFileSync(path.resolve(pathExtract, path.basename(forgeJSON.install.json)));
+            forgeJSON.version = JSON.parse(file);
         }
 
+        fs.rmSync(pathExtract, { recursive: true });
         return forgeJSON;
     }
 
@@ -82,12 +85,12 @@ module.exports = class index {
         let pathExtract = path.resolve(this.options.path, 'temp');
         let skipForgeFilter = true
 
-        if(forgeJSON.install.filePath) {
+        if (forgeJSON.install.filePath) {
             let fileInfo = await getPathLibraries(forgeJSON.install.path)
             await extractAll(pathInstaller, pathExtract, { $cherryPick: forgeJSON.install.filePath });
 
             let file = path.resolve(pathExtract, forgeJSON.install.filePath);
-            let pathFileDest = path.resolve(this.options.path, fileInfo.path)
+            let pathFileDest = path.resolve(this.options.path, 'libraries', fileInfo.path)
 
             if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
             fs.copyFileSync(file, `${pathFileDest}/${fileInfo.name}`);
@@ -102,8 +105,8 @@ module.exports = class index {
             await Promise.all(
                 listFile.map(file => {
                     let pathFile = path.resolve(pathExtract, `maven/${fileInfo.path}`, file)
-                    let pathFileDest = path.resolve(this.options.path, fileInfo.path)
-                    if(!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
+                    let pathFileDest = path.resolve(this.options.path, 'libraries', fileInfo.path)
+                    if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
                     fs.copyFileSync(pathFile, `${pathFileDest}/${file}`);
                 })
             );
@@ -117,7 +120,27 @@ module.exports = class index {
     }
 
     async installLibraries(forgeJSON, skipForgeFilter) {
-        let { libraries } = forgeJSON.version ? forgeJSON.version : forgeJSON.install;
+        let { libraries } = forgeJSON.version;
+
+        if (forgeJSON.install.libraries) libraries = libraries.concat(forgeJSON.install.libraries);
+
+        libraries = libraries.filter((library, index, self) => index === self.findIndex(t => t.name === library.name))
+
+        let skipForge = [
+            'net.minecraftforge:forge',
+            'net.minecraftforge:minecraftforge:'
+        ]
+
+        let mirror = [
+            "https://maven.minecraftforge.net/",
+            "https://maven.creeperhost.net/"
+        ]
+
+        for (let lib of libraries) {
+            if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) continue
+            let url
+            let libInfo = await getPathLibraries(lib.name)            
+        }
 
         return libraries
     }
@@ -126,15 +149,31 @@ module.exports = class index {
         let pathExtract = path.resolve(this.options.path, 'temp');
         let libraries = forgeJSON.version ? forgeJSON.version.libraries : forgeJSON.install.libraries;
 
-        if (forgeJSON.install.processors) {
+        if (forgeJSON.install.processors?.length) {
             await extractAll(pathInstaller, pathExtract, { $cherryPick: `data/client.lzma` });
             let client = path.resolve(pathExtract, 'data/client.lzma');
             let universalPath = libraries.find(v => v.name.includes('net.minecraftforge:forge'))
             let fileInfo = await getPathLibraries(universalPath.name, '-clientdata' , '.lzma')
-            let pathFileDest = path.resolve(this.options.path, fileInfo.path)
+            let pathFileDest = path.resolve(this.options.path, 'libraries', fileInfo.path)
 
             if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
             fs.copyFileSync(client, `${pathFileDest}/${fileInfo.name}`);
+
+            let { processors } = forgeJSON.install;
+
+            for(let key in processors) {
+                if (Object.prototype.hasOwnProperty.call(processors, key)) {
+                    let processor = processors[key];
+                    if (processor?.sides && !(processor?.sides || []).includes('client')) {
+                        continue;
+                    }
+                    let jar = await getPathLibraries(processor.jar)
+
+                    // console.log(jar)
+
+                }
+            }
+
             fs.rmSync(pathExtract, { recursive: true });
         }
     }
