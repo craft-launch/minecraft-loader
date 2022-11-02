@@ -1,6 +1,7 @@
 const nodeFetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 const { getFileHash, getPathLibraries, extractAll } = require('./utils');
 
@@ -86,7 +87,7 @@ module.exports = class index {
         let skipForgeFilter = true
 
         if (forgeJSON.install.filePath) {
-            let fileInfo = await getPathLibraries(forgeJSON.install.path)
+            let fileInfo = getPathLibraries(forgeJSON.install.path)
             await extractAll(pathInstaller, pathExtract, { $cherryPick: forgeJSON.install.filePath });
 
             let file = path.resolve(pathExtract, forgeJSON.install.filePath);
@@ -98,7 +99,7 @@ module.exports = class index {
             fs.rmSync(pathExtract, { recursive: true });
             return skipForgeFilter;
         } else if (forgeJSON.install.path) {
-            let fileInfo = await getPathLibraries(forgeJSON.install.path)
+            let fileInfo = getPathLibraries(forgeJSON.install.path)
             await extractAll(pathInstaller, pathExtract, { $cherryPick: `maven/${fileInfo.path}` });
             let listFile = fs.readdirSync(path.join(pathExtract, `maven/${fileInfo.path}`));
 
@@ -138,13 +139,14 @@ module.exports = class index {
 
         for (let lib of libraries) {
             if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) continue
-            let libInfo = await getPathLibraries(lib.name);
+            let libInfo = getPathLibraries(lib.name);
             let pathLib = path.resolve(this.options.path, 'libraries', libInfo.path);
             let pathLibFile = path.resolve(pathLib, libInfo.name);
 
             if (!fs.existsSync(pathLib)) fs.mkdirSync(pathLib, { recursive: true });
 
             if (!fs.existsSync(pathLibFile)) {
+                console.log(`Downloading ${libInfo.name}...`);
                 let url = `${mirror[0]}${libInfo.path}/${libInfo.name}`;
                 let libFile = await nodeFetch(url);
                 if (libFile.status !== 200) {
@@ -168,30 +170,102 @@ module.exports = class index {
 
     async patching(forgeJSON, pathInstaller) {
         let pathExtract = path.resolve(this.options.path, 'temp');
-        let libraries = forgeJSON.version ? forgeJSON.version.libraries : forgeJSON.install.libraries;
 
         if (forgeJSON.install.processors?.length) {
             await extractAll(pathInstaller, pathExtract, { $cherryPick: `data/client.lzma` });
-            let client = path.resolve(pathExtract, 'data/client.lzma');
-            let universalPath = libraries.find(v => v.name.includes('net.minecraftforge:forge'))
-            let fileInfo = await getPathLibraries(universalPath.name, '-clientdata' , '.lzma')
-            let pathFileDest = path.resolve(this.options.path, 'libraries', fileInfo.path)
 
-            if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
-            fs.copyFileSync(client, `${pathFileDest}/${fileInfo.name}`);
+            let universalPath = forgeJSON.install.libraries.find(v =>
+                (v.name || '').startsWith('net.minecraftforge:forge')
+            )
+
+            let client = path.resolve(pathExtract, 'data/client.lzma');
+            let fileInfo = getPathLibraries(forgeJSON.install.path || universalPath.name, '-clientdata' , '.lzma')
+            let librariesPath = path.resolve(this.options.path, 'libraries')
+
+            if (!fs.existsSync(`${librariesPath}/${fileInfo.path}`)) fs.mkdirSync(`${librariesPath}/${fileInfo.path}`, { recursive: true });
+            fs.copyFileSync(client, `${librariesPath}/${fileInfo.path}/${fileInfo.name}`);
 
             let { processors } = forgeJSON.install;
 
-            for(let key in processors) {
+            for (let key in processors) {
                 if (Object.prototype.hasOwnProperty.call(processors, key)) {
                     let processor = processors[key];
                     if (processor?.sides && !(processor?.sides || []).includes('client')) {
                         continue;
                     }
-                    let jar = await getPathLibraries(processor.jar)
+                    let jar = getPathLibraries(processor.jar)
+                    let filePath = path.resolve(librariesPath, jar.path, jar.name)
 
-                    // console.log(jar)
+                    let args = processor.args.map(arg => {
+                        let finalArg = arg.replace('{', '').replace('}', '');
+                        if (forgeJSON.install.data[finalArg]) {
+                            if (finalArg === 'BINPATCH') {
+                                let clientdata = getPathLibraries(forgeJSON.install.path || universalPath.name)
+                                return `"${path
+                                    .join(librariesPath, `${clientdata.path}/${clientdata.name}`)
+                                    .replace('.jar', '-clientdata.lzma')}"`;
+                            }
+                            return forgeJSON.install.data[finalArg].client;
+                        }
+                        return arg
+                            .replace('{SIDE}', `client`)
+                            .replace('{ROOT}', `"${path.dirname(path.resolve(this.options.path, 'forge'))}"`)
+                            .replace('{MINECRAFT_JAR}', `"${path.resolve(this.options.path, 'versions', '1.19.2', '1.19.2.jar')}"`)
+                            .replace('{MINECRAFT_VERSION}', `"${path.resolve(this.options.path, 'versions', '1.19.2', '1.19.2.json')}"`)
+                            .replace('{INSTALLER}', `"${librariesPath}"`)
+                            .replace('{LIBRARY_DIR}', `"${librariesPath}"`);
+                    }).map(arg => {
+                        if (arg[0] === '[') {
+                            let libMCP = getPathLibraries(arg.replace('[', '').replace(']', ''))
+                            return `"${path.join(librariesPath, `${libMCP.path}/${libMCP.name}`)}"`;
+                        }
+                        return arg;
+                    })
 
+                    const classPaths = processor.classpath.map(cp => {
+                        let classPath = getPathLibraries(cp)
+                        return `"${path.join(librariesPath, `${classPath.path}/${classPath.name}`)}"`
+                    });
+
+                    const readJarManifest = async (jarPath, property) => {
+                        const { extraction: list } = await extractAll(jarPath, '.', {
+                            toStdout: true,
+                            $cherryPick: 'META-INF/MANIFEST.MF'
+                        });
+                      
+                        if (list.info.has(property)) return list.info.get(property);
+                        return null;
+                      };
+
+                    const mainClass = await readJarManifest(filePath, 'Main-Class');
+
+                    await new Promise(resolve => {
+                        const ps = spawn(
+                            `"C:\\Users\\Luuxis\\Desktop\\Minecraft\\Minecraft Launcher\\runtime\\java-runtime-gamma\\windows-x64\\java-runtime-gamma\\bin\\java.exe"`,
+                            [
+                                '-classpath',
+                                [`"${filePath}"`, ...classPaths].join(path.delimiter),
+                                mainClass,
+                                ...args
+                            ],{ shell: true }
+                        );
+                        
+                        ps.stdout.on('data', data => {
+                            console.log(data.toString());
+                        });
+                        
+                        ps.stderr.on('data', data => {
+                            console.error(`ps stderr: ${data}`);
+                        });
+                        
+                        ps.on('close', code => {
+                            if (code !== 0) {
+                                console.log(`process exited with code ${code}`);
+                                resolve();
+                            }
+                            resolve();
+                        });
+                    });
                 }
             }
 

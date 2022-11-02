@@ -26,7 +26,7 @@ async function checkNetworkStatus(timeout = 10000) {
     return networkStatus;
 }
 
-async function getPathLibraries(main, nativeString, forceExt) {
+function getPathLibraries(main, nativeString, forceExt) {
     let libSplit = main.split(':')
     let fileName = libSplit[3] ? `${libSplit[2]}-${libSplit[3]}` : libSplit[2];
     let finalFileName = fileName.includes('@') ? fileName.replace('@', '.') : `${fileName}${nativeString || ''}${forceExt || '.jar'}`;

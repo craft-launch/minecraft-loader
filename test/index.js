@@ -7,13 +7,13 @@ async function main() {
         timeout: 5 * 1000,
         loader: {
             type: 'forge',
-            version: '1.13.2',
-            build: '1.13.2-25.0.223'
+            version: '1.19.2',
+            build: 'latest'
             // build: '1.12.2-14.23.5.2838'
         }
     });
 
-    console.log(await loader.download());
+    await loader.download()
 }
 
 main();
