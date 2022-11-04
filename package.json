@@ -1,9 +1,10 @@
 {
     "name": "forge-fabric-downloader",
-    "version": "0.0.0",
+    "version": "1.0.0-alpha.1",
     "description": "",
     "main": "index.js",
     "files": [
+        "loader/**",
         "utils/**",
         "index.js",
         "README.md"
