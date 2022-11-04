@@ -88,7 +88,8 @@ module.exports = class download {
     }
 
     multiple(files, totalsize, limit = 1) {
-        this.emit("progress", 0, totalsize);
+        let fileName
+        this.emit("progress", 0, totalsize, fileName);
 
         let complete = 0;
         let queued = 0;
@@ -116,7 +117,7 @@ module.exports = class download {
         }, 1000);
 
         let progressInterval = setInterval(() => {
-            this.emit("progress", downloaded, totalsize);
+            this.emit("progress", downloaded, totalsize, fileName);
         }, 100);
 
         queue();
@@ -139,6 +140,7 @@ module.exports = class download {
 
         async function download() {
             let file = files[i++];
+            fileName = file.name
             queued++;
 
             if (!fs.existsSync(file.folder)) fs.mkdirSync(file.folder, { recursive: true, mode: 0o777 });
