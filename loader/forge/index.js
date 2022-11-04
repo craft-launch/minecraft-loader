@@ -194,16 +194,8 @@ module.exports = class index {
             console.log('Downloading libraries...');
             let downloader = new download();
 
-            downloader.on("progress", (DL, totDL) => {
-                this.emit("progress", DL, totDL);
-            });
-
-            downloader.on("speed", (speed) => {
-                this.emit("speed", speed);
-            });
-
-            downloader.on("estimated", (time) => {
-                this.emit("estimated", time);
+            downloader.on("progress", (DL, totDL, file) => {
+                this.emit("progress", DL, totDL, file);
             });
 
             await new Promise((ret) => {
