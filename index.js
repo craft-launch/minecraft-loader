@@ -40,11 +40,16 @@ class index {
     async forge(Loader) {
         let forge = new Forge(this.options);
 
-        // download installer
+        // set event
         forge.on('progress', (progress, size, element) => {
             this.emit('progress', progress, size, element);
         });
 
+        forge.on('extract', (element) => {
+            this.emit('extract', element);
+        });
+
+        // download installer
         let installer = await forge.donwloadInstaller(Loader);
         if (installer.error) return this.emit('error', installer);
 

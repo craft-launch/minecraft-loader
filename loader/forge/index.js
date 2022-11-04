@@ -103,6 +103,8 @@ module.exports = class index {
             let fileInfo = getPathLibraries(profile.path)
             await extractAll(pathInstaller, this.pathTemp, { $cherryPick: profile.filePath });
 
+            this.emit('extract', `Extracting ${fileInfo.name}...`);
+
             let file = path.resolve(this.pathTemp, profile.filePath);
             let pathFileDest = path.resolve(this.pathLibraries, fileInfo.path)
 
@@ -118,6 +120,7 @@ module.exports = class index {
 
             await Promise.all(
                 listFile.map(file => {
+                    this.emit('extract', `Extracting ${file}...`);
                     let pathFile = path.resolve(this.pathTemp, `maven/${fileInfo.path}`, file)
                     let pathFileDest = path.resolve(this.pathLibraries, fileInfo.path)
                     if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
@@ -135,6 +138,8 @@ module.exports = class index {
 
     async downloadLibraries(profile, skipForgeFilter) {
         let { libraries } = profile.version;
+        let files = [];
+        let size = 0;
 
         if (profile.install.libraries) libraries = libraries.concat(profile.install.libraries);
 
@@ -151,34 +156,62 @@ module.exports = class index {
             "https://libraries.minecraft.net/"
         ]
 
-        let downloadLib = new download();
-
         for (let lib of libraries) {
             if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) continue
             if (lib.rules) continue
+            let file = {}
             let libInfo = getPathLibraries(lib.name);
             let pathLib = path.resolve(this.pathLibraries, libInfo.path);
             let pathLibFile = path.resolve(pathLib, libInfo.name);
 
-            if (!fs.existsSync(pathLib)) fs.mkdirSync(pathLib, { recursive: true });
             if (!fs.existsSync(pathLibFile)) {
                 let url
+                let sizeFile = 0
                 for (let mirror of mirrors) {
                     url = `${mirror}${libInfo.path}/${libInfo.name}`;
-                    let response = await downloadLib.checkURL(url);
-                    if (response.status === 200) break;
+                    let response = await new download().checkURL(url);
+                    if (response.status === 200) {
+                        size += response.size;
+                        sizeFile = response.size;
+                        break
+                    };
                 }
                 
                 if (!url) return { error: `Library ${lib.name} not found` };
 
-                downloadLib.on('progress', (downloaded, size, fileName) => {
-                    this.emit('progress', downloaded, size, fileName);
-                });
-                
-                url = `${url}${libInfo.path}/${libInfo.name}`;
-                await downloadLib.downloadFile(url, pathLib, libInfo.name);
+                file = {
+                    url: url,
+                    folder: pathLib,
+                    path: `${pathLib}/${libInfo.name}`,
+                    name: libInfo.name,
+                    size: sizeFile
+                }
+                files.push(file);                
             }
         }
+
+        if (files.length > 0) {
+            console.log('Downloading libraries...');
+            let downloader = new download();
+
+            downloader.on("progress", (DL, totDL) => {
+                this.emit("progress", DL, totDL);
+            });
+
+            downloader.on("speed", (speed) => {
+                this.emit("speed", speed);
+            });
+
+            downloader.on("estimated", (time) => {
+                this.emit("estimated", time);
+            });
+
+            await new Promise((ret) => {
+                downloader.on("finish", ret);
+                downloader.multiple(files, size, 10);
+            });
+        }
+
         return libraries
     }
 }
