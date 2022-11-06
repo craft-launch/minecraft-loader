@@ -9,6 +9,7 @@ const fs = require('fs');
 const eventEmitter = require('events').EventEmitter;
 
 const { extractAll, getFileHash, download, getPathLibraries, mirrors } = require('../../utils');
+const forgePatcher = require('./forgePatcher');
 
 module.exports = class index {
     constructor(options = {}) {
@@ -217,6 +218,8 @@ module.exports = class index {
 
     async patchForge(profile) {
         if (profile.processors?.length) {
+            let patcher = new forgePatcher(this.options);
+ 
             
         } else {
             return true

@@ -5,7 +5,7 @@ let opt = {
     timeout: 10000,
     loader: {
         type: 'forge',
-        version: '1.12.2',
+        version: '1.19.2',
         build: 'latest',
         config: false
     }
@@ -16,7 +16,7 @@ let loader = new loaderDownloader(opt);
 loader.install();
 
 loader.on('json', json => {
-    console.log(json);
+    // console.log(json);
 });
 
 loader.on('extract', extract => {
@@ -29,10 +29,6 @@ loader.on('progress', (progress, size, element) => {
 
 loader.on('patch', patch => {
     console.log(patch);
-});
-
-loader.on('end', () => {
-    console.log('end');
 });
 
 loader.on('error', err => {

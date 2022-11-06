@@ -51,6 +51,10 @@ class index {
             this.emit('extract', element);
         });
 
+        forge.on('patch', patch => {
+            this.emit('patch', patch);
+        });
+
         // download installer
         let installer = await forge.donwloadInstaller(Loader);
         if (installer.error) return installer;
@@ -60,7 +64,7 @@ class index {
         if (profile.error) return profile
         let destination = path.resolve(this.pathVersions, profile.version.id)
         if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
-        fs.writeFileSync(path.resolve(destination, `${profile.version.id}.json`), JSON.stringify(profile.version));
+        fs.writeFileSync(path.resolve(destination, `${profile.version.id}.json`), JSON.stringify(profile));
 
         // extract universal jar
         let universal = await forge.extractUniversalJar(profile.install, installer.filePath);
