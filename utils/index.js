@@ -87,11 +87,18 @@ class utils {
 
 let utilsInstance = new utils();
 
+let mirrors = [
+    "https://maven.minecraftforge.net/",
+    "https://maven.creeperhost.net/",
+    "https://libraries.minecraft.net/"
+]
+
 module.exports = {
     getFileHash: utilsInstance.getFileHash,
     checkNetworkStatus: utilsInstance.checkNetworkStatus,
     getPathLibraries: utilsInstance.getPathLibraries,
     extractAll: utilsInstance.extractAll,
     loader: utilsInstance.loader,
-    download: download
+    download: download,
+    mirrors: mirrors
 }

@@ -8,7 +8,7 @@ const nodeFetch = require('node-fetch');
 const fs = require('fs');
 const eventEmitter = require('events').EventEmitter;
 
-const { extractAll, getFileHash, download, getPathLibraries } = require('../../utils');
+const { extractAll, getFileHash, download, getPathLibraries, mirrors } = require('../../utils');
 
 module.exports = class index {
     constructor(options = {}) {
@@ -98,11 +98,11 @@ module.exports = class index {
 
     async extractUniversalJar(profile, pathInstaller) {
         let skipForgeFilter = true
+        await extractAll(pathInstaller, this.pathTemp);
+
 
         if (profile.filePath) {
             let fileInfo = getPathLibraries(profile.path)
-            await extractAll(pathInstaller, this.pathTemp, { $cherryPick: profile.filePath });
-
             this.emit('extract', `Extracting ${fileInfo.name}...`);
 
             let file = path.resolve(this.pathTemp, profile.filePath);
@@ -110,12 +110,8 @@ module.exports = class index {
 
             if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
             fs.copyFileSync(file, `${pathFileDest}/${fileInfo.name}`);
-
-            fs.rmSync(this.pathTemp, { recursive: true });
-            return skipForgeFilter;
         } else if (profile.path) {
             let fileInfo = getPathLibraries(profile.path)
-            await extractAll(pathInstaller, this.pathTemp, { $cherryPick: `maven/${fileInfo.path}` });
             let listFile = fs.readdirSync(path.join(this.pathTemp, `maven/${fileInfo.path}`));
 
             await Promise.all(
@@ -126,14 +122,27 @@ module.exports = class index {
                     if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
                     fs.copyFileSync(pathFile, `${pathFileDest}/${file}`);
                 })
-            );
-
-            fs.rmSync(this.pathTemp, { recursive: true });
-            return skipForgeFilter;
+            ); 
         } else {
             skipForgeFilter = false
-            return skipForgeFilter;
         }
+
+        if (profile.processors?.length) {
+            let universalPath = profile.libraries.find(v => {
+                return (v.name || '').startsWith('net.minecraftforge:forge')
+            })
+
+            let client = path.resolve(this.pathTemp, 'data/client.lzma');
+            let fileInfo = getPathLibraries(profile.path || universalPath.name, '-clientdata' , '.lzma')
+            let pathFile = path.resolve(this.pathLibraries, fileInfo.path)
+            
+            if (!fs.existsSync(pathFile)) fs.mkdirSync(pathFile, { recursive: true });
+            fs.copyFileSync(client, `${pathFile}/${fileInfo.name}`);
+            this.emit('extract', `Extracting ${fileInfo.name}...`);
+        }
+
+        fs.rmSync(this.pathTemp, { recursive: true });
+        return skipForgeFilter
     }
 
     async downloadLibraries(profile, skipForgeFilter) {
@@ -148,12 +157,6 @@ module.exports = class index {
         let skipForge = [
             'net.minecraftforge:forge',
             'net.minecraftforge:minecraftforge:'
-        ]
-
-        let mirrors = [
-            "https://maven.minecraftforge.net/",
-            "https://maven.creeperhost.net/",
-            "https://libraries.minecraft.net/"
         ]
 
         for (let lib of libraries) {
@@ -174,7 +177,14 @@ module.exports = class index {
                         size += response.size;
                         sizeFile = response.size;
                         break
-                    };
+                    } else if (lib.downloads?.artifact) {
+                        url = lib.downloads.artifact.url
+                        size += lib.downloads.artifact.size;
+                        sizeFile = lib.downloads.artifact.size;
+                        break
+                    } else {
+                        url = null
+                    }
                 }
                 
                 if (!url) return { error: `Library ${lib.name} not found` };
@@ -191,7 +201,6 @@ module.exports = class index {
         }
 
         if (files.length > 0) {
-            console.log('Downloading libraries...');
             let downloader = new download();
 
             downloader.on("progress", (DL, totDL, file) => {
@@ -203,7 +212,14 @@ module.exports = class index {
                 downloader.multiple(files, size, 10);
             });
         }
-
         return libraries
+    }
+
+    async patchForge(profile) {
+        if (profile.processors?.length) {
+            
+        } else {
+            return true
+        }
     }
 }
