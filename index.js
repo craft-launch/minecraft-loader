@@ -30,9 +30,11 @@ class index {
 
         if (this.options.loader.type === 'forge') {
             let forge = await this.forge(Loader);
+            if (forge.error) return this.emit('error', forge);
             this.emit('json', forge);
         } else if (this.options.loader.type === 'fabric') {
             let fabric = await this.fabric(Loader);
+            if (fabric.error) return this.emit('error', fabric);
             this.emit('json', fabric);
         }
     }
@@ -51,23 +53,28 @@ class index {
 
         // download installer
         let installer = await forge.donwloadInstaller(Loader);
-        if (installer.error) return this.emit('error', installer);
+        if (installer.error) return installer;
 
         // extract install profile
         let profile = await forge.extractProfile(installer.filePath);
-        if (profile.error) return this.emit('error', profile);
+        if (profile.error) return profile
         let destination = path.resolve(this.pathVersions, profile.version.id)
         if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
         fs.writeFileSync(path.resolve(destination, `${profile.version.id}.json`), JSON.stringify(profile.version));
 
         // extract universal jar
         let universal = await forge.extractUniversalJar(profile.install, installer.filePath);
-        if (universal.error) return this.emit('error', universal);
+        if (universal.error) return universal;
 
         // download libraries
         let libraries = await forge.downloadLibraries(profile, universal);
-        if (libraries.error) return this.emit('error', libraries);
-        
+        if (libraries.error) return libraries;
+
+        // patch forge if nessary
+        let patch = await forge.patchForge(profile, universal);
+        if (patch.error) return patch;
+
+        return profile.version;
     }
 
     async fabric(Loader) {}
