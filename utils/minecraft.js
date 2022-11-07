@@ -42,7 +42,6 @@ module.exports = class minecraft {
             file.size = info.downloads.raw.size;
             file.url = info.downloads.raw.url;
             files.push(file);
-            console.log(path)
         }
         return { files: files, version: version };
     }

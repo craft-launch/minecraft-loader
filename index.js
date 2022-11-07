@@ -64,7 +64,7 @@ class index {
         if (profile.error) return profile
         let destination = path.resolve(this.pathVersions, profile.version.id)
         if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
-        fs.writeFileSync(path.resolve(destination, `${profile.version.id}.json`), JSON.stringify(profile));
+        fs.writeFileSync(path.resolve(destination, `${profile.version.id}.json`), JSON.stringify(profile.version, null, 4));
 
         // extract universal jar
         let universal = await forge.extractUniversalJar(profile.install, installer.filePath);
@@ -75,7 +75,7 @@ class index {
         if (libraries.error) return libraries;
 
         // patch forge if nessary
-        let patch = await forge.patchForge(profile, universal);
+        let patch = await forge.patchForge(profile.install, universal);
         if (patch.error) return patch;
 
         return profile.version;

@@ -8,7 +8,7 @@ const nodeFetch = require('node-fetch');
 const fs = require('fs');
 const eventEmitter = require('events').EventEmitter;
 
-const { extractAll, getFileHash, download, getPathLibraries, mirrors } = require('../../utils');
+const { extractAll, getFileHash, download, getPathLibraries, mirrors, downloadTools } = require('../../utils');
 const forgePatcher = require('./forgePatcher');
 
 module.exports = class index {
@@ -219,10 +219,15 @@ module.exports = class index {
     async patchForge(profile) {
         if (profile.processors?.length) {
             let patcher = new forgePatcher(this.options);
- 
-            
-        } else {
-            return true
+            let tool = new downloadTools(this.options);
+            let config = {}
+
+            if (!this.options.loader.config) {
+                // let java = await tool.downloadJava();
+                
+                
+            }
         }
+        return true
     }
 }

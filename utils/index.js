@@ -10,6 +10,8 @@ const { path7za } = require('7zip-bin');
 const fs = require('fs');
 
 const download = require('./download');
+const minecraft = require('./minecraft');
+const downloadTools = require('./downloadTools');
 
 class utils {
     async getFileHash(filePath, algorithm = 'sha1') {
@@ -100,5 +102,7 @@ module.exports = {
     extractAll: utilsInstance.extractAll,
     loader: utilsInstance.loader,
     download: download,
-    mirrors: mirrors
+    mirrors: mirrors,
+    minecraft: minecraft,
+    downloadTools: downloadTools
 }

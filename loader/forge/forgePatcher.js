@@ -3,6 +3,8 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0/
  */
 
+const path = require('path');
+
 const { getPathLibraries, extractAll } = require('../../utils');
 
 const eventEmitter = require('events').EventEmitter;
@@ -19,7 +21,7 @@ module.exports = class forgePatcher {
         this.emit = eventEmitter.prototype.emit;
     }
 
-    async patcher() {
+    async patcher(profile) {
         let { processors } = profile;
         
         for (let key in processors) {
@@ -66,18 +68,18 @@ module.exports = class forgePatcher {
     computePath() {
         if (arg[0] === '[') {
             let libMCP = getPathLibraries(arg.replace('[', '').replace(']', ''))
-            return `"${path.join(librariesPath, `${libMCP.path}/${libMCP.name}`)}"`;
+            return `"${path.join(this.pathLibraries, `${libMCP.path}/${libMCP.name}`)}"`;
         }
         return arg;
     }
     
     async readJarManifest(jarPath, property) {
-        let { extraction: list } = await extractAll(jarPath, pathExtract, {
+        let { extraction } = await extractAll(jarPath, pathExtract, {
             toStdout: true,
             $cherryPick: 'META-INF/MANIFEST.MF'
         });
       
-        if (list.info.has(property)) return list.info.get(property);
+        if (extraction.info.has(property)) return extraction.info.get(property);
         return null;
     }
 }
