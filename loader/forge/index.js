@@ -56,8 +56,8 @@ module.exports = class index {
             if (!fs.existsSync(pathFolder)) fs.mkdirSync(pathFolder, { recursive: true });
             let downloadForge = new download();
 
-            downloadForge.on('progress', (downloaded, size, fileName) => {
-                this.emit('progress', downloaded, size, fileName);
+            downloadForge.on('progress', (downloaded, size) => {
+                this.emit('progress', downloaded, size, `forge-${metaData}-installer.jar`);
             });
 
             await downloadForge.downloadFile(forgeURL, pathFolder, `forge-${metaData}-installer.jar`);
@@ -205,13 +205,10 @@ module.exports = class index {
             let downloader = new download();
 
             downloader.on("progress", (DL, totDL, file) => {
-                this.emit("progress", DL, totDL, file);
+                this.emit("progress", DL, totDL, 'libraries');
             });
-
-            await new Promise((ret) => {
-                downloader.on("finish", ret);
-                downloader.multiple(files, size, 10);
-            });
+            
+            await downloader.downloadFileMultiple(files, size, 10);
         }
         return libraries
     }
@@ -222,10 +219,12 @@ module.exports = class index {
             let tool = new downloadTools(this.options);
             let config = {}
 
+            tool.on('progress', (DL, totDL, file) => {
+                this.emit('progress', DL, totDL, file);
+            });
+
             if (!this.options.loader.config) {
-                // let java = await tool.downloadJava();
-                
-                
+                let java = await tool.downloadJava();
             }
         }
         return true

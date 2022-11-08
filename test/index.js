@@ -3,6 +3,7 @@ const loaderDownloader = require('../index');
 let opt = {
     path: './.MC',
     timeout: 10000,
+    autoClean: false,
     loader: {
         type: 'forge',
         version: '1.19.2',

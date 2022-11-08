@@ -47,17 +47,14 @@ module.exports = class javaDownload {
             let downloader = new download();
 
             downloader.on("progress", (DL, totDL, file) => {
-                this.emit("progress", DL, totDL, file);
+                this.emit("progress", DL, totDL, 'java');
             });
 
-            await new Promise((ret) => {
-                downloader.on("finish", ret);
-                downloader.multiple(files, size, 5);
-            });
+            await downloader.downloadFileMultiple(files, size, 10);
         }
 
         return {
-            java: java,
+            java: java.version,
             JSON: version
         }
     }
@@ -70,8 +67,8 @@ module.exports = class javaDownload {
             let downloadForge = new download();
             let url = Json.downloads.client.url;
 
-            downloadForge.on('progress', (downloaded, size, fileName) => {
-                this.emit('progress', downloaded, size, fileName);
+            downloadForge.on('progress', (downloaded, size) => {
+                this.emit('progress', downloaded, size, `${this.versionMinecraft}.jar`);
             });
 
             await downloadForge.downloadFile(url, folder, `${this.versionMinecraft}.jar`);
