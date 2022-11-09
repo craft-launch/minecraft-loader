@@ -173,7 +173,7 @@ module.exports = class index {
                 let sizeFile = 0
                 for (let mirror of mirrors) {
                     url = `${mirror}${libInfo.path}/${libInfo.name}`;
-                    let response = await new download().checkURL(url);
+                    let response = await new download().checkURL(url).then(res => res).catch(err => err);
                     if (response.status === 200) {
                         size += response.size;
                         sizeFile = response.size;
@@ -225,7 +225,17 @@ module.exports = class index {
 
             if (!this.options.loader.config) {
                 let java = await tool.downloadJava();
+                let minecraft = await tool.downloadMinecraftJar(java.JSON);
+                if (!fs.existsSync(minecraft.json)) fs.writeFileSync(minecraft.json, JSON.stringify(java.JSON, null, 4));
+
+                config = {
+                    java: path.resolve(this.options.path, 'runtime', java.java, 'bin', 'java'),
+                    minecraft: minecraft.jar,
+                    minecraftJson: minecraft.json,
+                }
             }
+
+            console.log(config)
         }
         return true
     }

@@ -4,7 +4,6 @@
  */
 
 const fs = require('fs');
-const nodeFetch = require('node-fetch');
 const axios = require('axios');
 const eventEmitter = require('events').EventEmitter;
 
@@ -104,12 +103,20 @@ module.exports = class download {
     }
 
     async checkURL(url) {
-        let response = await nodeFetch(url, { method: 'HEAD' });
-        if (response.status === 200) {
-            return {
-                size: parseInt(response.headers.get('content-length')),
-                status: response.status
-            };
-        } else return false;
+        console.log(url);
+        return new Promise(async(resolve, reject) => {
+            await axios.head(url, { responseType: 'stream' }).then(response => {
+                if (response.status === 200) {
+                    resolve({
+                        size: parseInt(response.headers['content-length']),
+                        status: response.status
+                    });
+                } else {
+                    resolve(false);
+                }
+            }).catch(err => {
+                reject(err);
+            });
+        });
     }
 }

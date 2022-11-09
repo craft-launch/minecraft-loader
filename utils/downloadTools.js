@@ -15,6 +15,7 @@ module.exports = class javaDownload {
         this.options = options;
         this.versionMinecraft = this.options.loader.version;
         this.path = path.resolve(this.options.path);
+        this.pathVersions = path.resolve(this.path, 'versions');
         this.on = eventEmitter.prototype.on;
         this.emit = eventEmitter.prototype.emit;
     }
@@ -46,7 +47,7 @@ module.exports = class javaDownload {
         if (files.length > 0) {
             let downloader = new download();
 
-            downloader.on("progress", (DL, totDL, file) => {
+            downloader.on("progress", (DL, totDL) => {
                 this.emit("progress", DL, totDL, 'java');
             });
 
@@ -64,6 +65,7 @@ module.exports = class javaDownload {
         let folder = path.resolve(this.pathVersions, this.versionMinecraft)
 
         if (!fs.existsSync(`${versionPath}.jar`)) {
+            fs.mkdirSync(folder, { recursive: true });
             let downloadForge = new download();
             let url = Json.downloads.client.url;
 
@@ -72,6 +74,11 @@ module.exports = class javaDownload {
             });
 
             await downloadForge.downloadFile(url, folder, `${this.versionMinecraft}.jar`);
+        }
+
+        return {
+            jar: `${versionPath}.jar`,
+            json: `${versionPath}.json`
         }
     }
 }
