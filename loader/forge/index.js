@@ -183,9 +183,7 @@ module.exports = class index {
                         size += lib.downloads.artifact.size;
                         sizeFile = lib.downloads.artifact.size;
                         break
-                    } else {
-                        url = null
-                    }
+                    } else url = null
                 }
                 
                 if (!url) return { error: `Library ${lib.name} not found` };
@@ -234,6 +232,9 @@ module.exports = class index {
                     minecraftJson: minecraft.json,
                 }
             }
+
+
+            await patcher.patcher(profile, config);
 
             console.log(config)
         }

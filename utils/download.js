@@ -102,18 +102,14 @@ module.exports = class download {
         });
     }
 
-    async checkURL(url) {
+    checkURL(url) {
         console.log(url);
         return new Promise(async(resolve, reject) => {
             await axios.head(url, { responseType: 'stream' }).then(response => {
-                if (response.status === 200) {
-                    resolve({
-                        size: parseInt(response.headers['content-length']),
-                        status: response.status
-                    });
-                } else {
-                    resolve(false);
-                }
+                resolve({
+                    size: parseInt(response.headers['content-length']),
+                    status: response.status
+                });
             }).catch(err => {
                 reject(err);
             });
