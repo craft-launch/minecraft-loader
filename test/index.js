@@ -1,19 +1,37 @@
 const loaderDownloader = require('../index');
 
-
-async function main() {
-    let loader = new loaderDownloader({
-        path: './.MC',
-        timeout: 5 * 1000,
-        loader: {
-            type: 'forge',
-            version: '1.19.2',
-            build: 'latest'
-            // build: '1.12.2-14.23.5.2838'
-        }
-    });
-
-    await loader.download()
+let opt = {
+    path: './.MC',
+    timeout: 10000,
+    autoClean: false,
+    loader: {
+        type: 'forge',
+        version: '1.19.2',
+        build: 'latest',
+        config: false
+    }
 }
 
-main();
+let loader = new loaderDownloader(opt);
+
+loader.install();
+
+loader.on('json', json => {
+    // console.log(json);
+});
+
+loader.on('extract', extract => {
+    console.log(extract);
+});
+
+loader.on('progress', (progress, size, element) => {
+    console.log(`Downloading ${element} ${Math.round((progress / size) * 100)}%`);
+});
+
+loader.on('patch', patch => {
+    console.log(patch);
+});
+
+loader.on('error', err => {
+    console.log(err);
+});

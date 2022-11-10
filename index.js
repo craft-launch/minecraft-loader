@@ -1,50 +1,87 @@
-const fs = require('fs');
+/**
+ * @author Luuxis
+ * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0/
+ */
+
 const path = require('path');
+const fs = require('fs');
+const eventEmitter = require('events').EventEmitter;
 
-const { checkNetworkStatus } = require('./utils/utils');
-const loader = require('./utils/loader');
-const Forge = require('./utils/forge');
-
+const { checkNetworkStatus, loader } = require('./utils');
+const Forge = require('./loader/forge');
 
 class index {
     constructor(options = {}) {
         this.options = options;
+        this.path = path.resolve(this.options.path);
+        this.pathLibraries = path.resolve(this.path, 'libraries');
+        this.pathVersions = path.resolve(this.path, 'versions');
+        this.pathTemp = path.resolve(this.path, 'temp');
+        this.on = eventEmitter.prototype.on;
+        this.emit = eventEmitter.prototype.emit;
     }
 
-    async download() {
+    async install() {
         let networkStatus = await checkNetworkStatus(this.options.timeout);
-        if (!networkStatus) return { error: { message: 'Network error' } };
-        let Loader = loader.Loader(this.options.loader.type);
-        if (Loader.error) return Loader;
-        let json = await this[Object.entries(Loader)[0][0]](Loader)
-        return json;
+        if (!networkStatus) return this.emit('error', { error: 'Network error' });
+
+        let Loader = loader(this.options.loader.type);
+        if (!Loader) return this.emit('error', { error: `Loader ${this.options.loader.type} not found` });
+
+        if (this.options.loader.type === 'forge') {
+            let forge = await this.forge(Loader);
+            if (forge.error) return this.emit('error', forge);
+            this.emit('json', forge);
+        } else if (this.options.loader.type === 'fabric') {
+            let fabric = await this.fabric(Loader);
+            if (fabric.error) return this.emit('error', fabric);
+            this.emit('json', fabric);
+        }
     }
 
     async forge(Loader) {
         let forge = new Forge(this.options);
-        let forgeInstaller = await forge.downloadInstaller(Loader);
-        if (forgeInstaller.error) return forgeInstaller;
 
-        let installProfile = await forge.installProfile(forgeInstaller.filePath);
-        if (installProfile.error) return installProfile;
+        // set event
+        forge.on('progress', (progress, size, element) => {
+            this.emit('progress', progress, size, element);
+        });
 
-        let versionFolder = path.resolve(this.options.path, 'versions', `forge-${forgeInstaller.metaData}`);
-        if (!fs.existsSync(versionFolder)) fs.mkdirSync(versionFolder, { recursive: true });
+        forge.on('extract', (element) => {
+            this.emit('extract', element);
+        });
 
-        let forgeJSONPath = path.resolve(versionFolder, `forge-${forgeInstaller.metaData}.json`);
-        fs.writeFileSync(forgeJSONPath, JSON.stringify(installProfile.version, null, 4));
+        forge.on('patch', patch => {
+            this.emit('patch', patch);
+        });
 
-        let forgeJarPath = await forge.jarPathInstall(installProfile, forgeInstaller.filePath);
+        // download installer
+        let installer = await forge.donwloadInstaller(Loader);
+        if (installer.error) return installer;
 
-        let forgeLibrariesInstall = await forge.installLibraries(installProfile, forgeJarPath);
+        // extract install profile
+        let profile = await forge.extractProfile(installer.filePath);
+        if (profile.error) return profile
+        let destination = path.resolve(this.pathVersions, profile.version.id)
+        if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
+        fs.writeFileSync(path.resolve(destination, `${profile.version.id}.json`), JSON.stringify(profile.version, null, 4));
 
-        await forge.patching(installProfile, forgeInstaller.filePath);
+        // extract universal jar
+        let universal = await forge.extractUniversalJar(profile.install, installer.filePath);
+        if (universal.error) return universal;
 
-        return installProfile.version;
+        // download libraries
+        let libraries = await forge.downloadLibraries(profile, universal);
+        if (libraries.error) return libraries;
+
+        // patch forge if nessary
+        let patch = await forge.patchForge(profile.install, universal);
+        if (patch.error) return patch;
+
+        return profile.version;
     }
 
     async fabric(Loader) {}
-
 }
 
 module.exports = index;
