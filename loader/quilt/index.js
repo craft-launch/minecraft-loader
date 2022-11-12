@@ -25,15 +25,17 @@ module.exports = class index {
         let metaData = await nodeFetch(Loader.metaData).then(res => res.json());
 
         let version = metaData.game.find(version => version.version === this.versionMinecraft);
-        if (!version) return { error: `FabricMC doesn't support Minecraft ${this.versionMinecraft}` };
+        if (!version) return { error: `QuiltMC doesn't support Minecraft ${this.versionMinecraft}` };
 
-        if (this.options.loader.build === 'latest' || this.options.loader.build === 'recommended') {
+        if (this.options.loader.build === 'latest') {
             build = metaData.loader[0];
+        } else if (this.options.loader.build === 'recommended') {
+            build = metaData.loader.find(build => !build.version.includes('beta'));
         } else {
             build = metaData.loader.find(loader => loader.version === this.options.loader.build);
         }
 
-        if (!build) return { error: `Fabric Loader ${this.options.loader.build} not fond` };
+        if (!build) return { error: `Quilt Loader ${this.options.loader.build} not fond` };
 
         let url = Loader.json.replace('${build}', build.version).replace('${version}', this.versionMinecraft);
         let json = await nodeFetch(url).then(res => res.json()).catch(err => err);

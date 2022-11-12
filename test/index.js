@@ -5,9 +5,9 @@ let opt = {
     timeout: 10000,
     autoClean: false,
     loader: {
-        type: 'fabric',
-        version: '22w45a',
-        build: 'latest',
+        type: 'quilt',
+        version: '1.19.2',
+        build: 'recommended',
         config: false
     }
 }

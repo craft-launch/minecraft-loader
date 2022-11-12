@@ -10,6 +10,7 @@ const eventEmitter = require('events').EventEmitter;
 const { checkNetworkStatus, loader } = require('./utils');
 const Forge = require('./loader/forge');
 const Fabric = require('./loader/fabric');
+const Quilt = require('./loader/quilt');
 
 class index {
     constructor(options = {}) {
@@ -37,6 +38,10 @@ class index {
             let fabric = await this.fabric(Loader);
             if (fabric.error) return this.emit('error', fabric);
             this.emit('json', fabric);
+        } else if (this.options.loader.type === 'quilt') {
+            let quilt = await this.fabric(Loader);
+            if (quilt.error) return this.emit('error', quilt);
+            this.emit('json', quilt);
         }
     }
 
@@ -97,9 +102,29 @@ class index {
         if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
         fs.writeFileSync(path.resolve(destination, `${json.id}.json`), JSON.stringify(json, null, 4));
 
-
         // download libraries
         await fabric.downloadLibraries(json);
+
+        return json;
+    }
+
+    async fabric(Loader) {
+        let quilt = new Quilt(this.options);
+
+        // set event
+        quilt.on('progress', (progress, size, element) => {
+            this.emit('progress', progress, size, element);
+        });
+
+        // download Json
+        let json = await quilt.downloadJson(Loader);
+        if (json.error) return json;
+        let destination = path.resolve(this.pathVersions, json.id)
+        if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
+        fs.writeFileSync(path.resolve(destination, `${json.id}.json`), JSON.stringify(json, null, 4));
+
+        // download libraries
+        await quilt.downloadLibraries(json);
 
         return json;
     }
