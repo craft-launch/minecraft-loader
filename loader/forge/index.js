@@ -174,7 +174,7 @@ module.exports = class index {
                 let sizeFile = 0
                 
                 let baseURL = `${libInfo.path}/${libInfo.name}`;
-                let response = await downloader.checkMirror(baseURL, mirrors).then(res => res);
+                let response = await downloader.checkMirror(baseURL, mirrors).then(res => res).catch(err => false)
                 
                 if (response || response.status === 200) {
                     size += response.size;
@@ -187,7 +187,6 @@ module.exports = class index {
                 } else {
                     url = null
                 }
-                
                 
                 if (url == null || !url) {
                     return { error: `Impossible to download ${lib.name}` };

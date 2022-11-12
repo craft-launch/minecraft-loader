@@ -59,7 +59,8 @@ module.exports = class index {
                 let url = `${lib.url}${libInfo.path}/${libInfo.name}`
                 let sizeFile = 0
 
-                let res = await downloader.checkURL(url);
+                let res = await downloader.checkURL(url)
+                
                 if (res.status === 200) {
                     sizeFile = res.size;
                     size += res.size;

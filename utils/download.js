@@ -111,16 +111,18 @@ module.exports = class download {
                         size: parseInt(res.headers.get('content-length')),
                         status: res.status
                     })
-                } else resolve(false);
-            }).catch(err => reject(err));
-        })
+                }
+            })
+            reject(false);
+        });
     }
 
     async checkMirror(baseURL, mirrors) {
-        return await new Promise(async resolve => {
+        return await new Promise(async(resolve, reject) => {
             for (let mirror of mirrors) {
                 let url = `${mirror}/${baseURL}`;
-                let res = await this.checkURL(url).then(res => res).catch(err => false);
+                let res = await this.checkURL(url).then(res => res).catch(err => reject(false));
+
                 if (res || res.status === 200) {
                     resolve({
                         url: url,
@@ -128,8 +130,9 @@ module.exports = class download {
                         status: res.status
                     })
                     break;
-                } else resolve(false);
+                }
             }
+            reject(false)
         })
     }
 }
