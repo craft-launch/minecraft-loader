@@ -5,8 +5,8 @@ let opt = {
     timeout: 10000,
     autoClean: false,
     loader: {
-        type: 'forge',
-        version: '1.19.2',
+        type: 'fabric',
+        version: '22w45a',
         build: 'latest',
         config: false
     }
@@ -17,7 +17,7 @@ let loader = new loaderDownloader(opt);
 loader.install();
 
 loader.on('json', json => {
-    // console.log(json);
+    console.log(json);
 });
 
 loader.on('extract', extract => {

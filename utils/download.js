@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const axios = require('axios');
+const nodeFetch = require('node-fetch');
 const eventEmitter = require('events').EventEmitter;
 
 module.exports = class download {
@@ -102,17 +103,33 @@ module.exports = class download {
         });
     }
 
-    checkURL(url) {
-        console.log(url);
-        return new Promise(async(resolve, reject) => {
-            await axios.head(url, { responseType: 'stream' }).then(response => {
-                resolve({
-                    size: parseInt(response.headers['content-length']),
-                    status: response.status
-                });
-            }).catch(err => {
-                reject(err);
-            });
-        });
+    async checkURL(url, timeout = 10000) {
+        return await new Promise(async(resolve, reject) => {
+            await nodeFetch(url, { method: 'HEAD', timeout: timeout }).then(res => {
+                if (res.status === 200) {
+                    resolve({
+                        size: parseInt(res.headers.get('content-length')),
+                        status: res.status
+                    })
+                } else resolve(false);
+            }).catch(err => reject(err));
+        })
+    }
+
+    async checkMirror(baseURL, mirrors) {
+        return await new Promise(async resolve => {
+            for (let mirror of mirrors) {
+                let url = `${mirror}/${baseURL}`;
+                let res = await this.checkURL(url).then(res => res).catch(err => false);
+                if (res || res.status === 200) {
+                    resolve({
+                        url: url,
+                        size: res.size,
+                        status: res.status
+                    })
+                    break;
+                } else resolve(false);
+            }
+        })
     }
 }

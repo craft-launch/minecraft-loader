@@ -9,6 +9,7 @@ const eventEmitter = require('events').EventEmitter;
 
 const { checkNetworkStatus, loader } = require('./utils');
 const Forge = require('./loader/forge');
+const Fabric = require('./loader/fabric');
 
 class index {
     constructor(options = {}) {
@@ -81,7 +82,27 @@ class index {
         return profile.version;
     }
 
-    async fabric(Loader) {}
+    async fabric(Loader) {
+        let fabric = new Fabric(this.options);
+
+        // set event
+        fabric.on('progress', (progress, size, element) => {
+            this.emit('progress', progress, size, element);
+        });
+
+        // download Json
+        let json = await fabric.downloadJson(Loader);
+        if (json.error) return json;
+        let destination = path.resolve(this.pathVersions, json.id)
+        if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
+        fs.writeFileSync(path.resolve(destination, `${json.id}.json`), JSON.stringify(json, null, 4));
+
+
+        // download libraries
+        await fabric.downloadLibraries(json);
+
+        return json;
+    }
 }
 
 module.exports = index;
