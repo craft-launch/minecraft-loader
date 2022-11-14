@@ -40,6 +40,7 @@ module.exports = class download {
     }
 
     async downloadFileMultiple(files, size, limit = 1) {
+        if (limit > files.length) limit = files.length;
         let completed = 0;
         let downloaded = 0;
         let queued = 0;
@@ -118,21 +119,21 @@ module.exports = class download {
     }
 
     async checkMirror(baseURL, mirrors) {
-        return await new Promise(async(resolve, reject) => {
-            for (let mirror of mirrors) {
-                let url = `${mirror}/${baseURL}`;
-                let res = await this.checkURL(url).then(res => res).catch(err => reject(false));
+        for (let mirror of mirrors) {
+            let url = `${mirror}/${baseURL}`;
+            let res = await this.checkURL(url).then(res => res).catch(err => false);
 
-                if (res || res.status === 200) {
-                    resolve({
-                        url: url,
-                        size: res.size,
-                        status: res.status
-                    })
-                    break;
+            if (res?.status == 200) {
+                return {
+                    url: url,
+                    size: res.size,
+                    status: res.status
                 }
-            }
-            reject(false)
-        })
+                break;
+            } continue;
+        }
+        return false;
     }
+
+
 }
