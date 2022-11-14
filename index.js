@@ -49,6 +49,10 @@ class index {
         let forge = new Forge(this.options);
 
         // set event
+        forge.on('check', (progress, size, element) => {
+            this.emit('check', progress, size, element);
+        });
+        
         forge.on('progress', (progress, size, element) => {
             this.emit('progress', progress, size, element);
         });
@@ -91,6 +95,10 @@ class index {
         let fabric = new Fabric(this.options);
 
         // set event
+        fabric.on('check', (progress, size, element) => {
+            this.emit('check', progress, size, element);
+        });
+
         fabric.on('progress', (progress, size, element) => {
             this.emit('progress', progress, size, element);
         });
@@ -112,6 +120,10 @@ class index {
         let quilt = new Quilt(this.options);
 
         // set event
+        quilt.on('check', (progress, size, element) => {
+            this.emit('check', progress, size, element);
+        });
+        
         quilt.on('progress', (progress, size, element) => {
             this.emit('progress', progress, size, element);
         });

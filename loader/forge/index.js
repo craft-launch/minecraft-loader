@@ -149,6 +149,7 @@ module.exports = class index {
     async downloadLibraries(profile, skipForgeFilter) {
         let { libraries } = profile.version;
         let downloader = new download();
+        let check = 0;
         let files = [];
         let size = 0;
 
@@ -162,8 +163,14 @@ module.exports = class index {
         ]
 
         for (let lib of libraries) {
-            if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) continue;
-            if (lib.rules) continue
+            if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) {
+                this.emit('check', check++, libraries.length, 'libraries');
+                continue;
+            }
+            if (lib.rules) {
+                this.emit('check', check++, libraries.length, 'libraries');
+                continue;
+            }
             let file = {}
             let libInfo = getPathLibraries(lib.name);
             let pathLib = path.resolve(this.pathLibraries, libInfo.path);
@@ -174,9 +181,9 @@ module.exports = class index {
                 let sizeFile = 0
                 
                 let baseURL = `${libInfo.path}/${libInfo.name}`;
-                let response = await downloader.checkMirror(baseURL, mirrors).then(res => res).catch(err => false)
+                let response = await downloader.checkMirror(baseURL, mirrors)
                 
-                if (response || response.status === 200) {
+                if (response?.status === 200) {
                     size += response.size;
                     sizeFile = response.size;
                     url = response.url;
@@ -199,8 +206,9 @@ module.exports = class index {
                     name: libInfo.name,
                     size: sizeFile
                 }
-                files.push(file);                
+                files.push(file);              
             }
+            this.emit('check', check++, libraries.length, 'libraries');
         }
 
         if (files.length > 0) {
@@ -245,6 +253,8 @@ module.exports = class index {
 
             await patcher.patcher(profile, config);
         }
+
+        if(fs.existsSync(this.pathTemp)) fs.rmSync(this.pathTemp, { recursive: true });
         return true
     }
 }

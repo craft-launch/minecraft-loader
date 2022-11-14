@@ -6,8 +6,8 @@ let opt = {
     autoClean: false,
     loader: {
         type: 'quilt',
-        version: '1.19.2',
-        build: 'recommended',
+        version: '1.14.4',
+        build: 'latest',
         config: false
     }
 }
@@ -26,6 +26,10 @@ loader.on('extract', extract => {
 
 loader.on('progress', (progress, size, element) => {
     console.log(`Downloading ${element} ${Math.round((progress / size) * 100)}%`);
+});
+
+loader.on('check', (progress, size, element) => {
+    console.log(`Checking ${element} ${Math.round((progress / size) * 100)}%`);
 });
 
 loader.on('patch', patch => {

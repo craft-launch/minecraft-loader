@@ -46,10 +46,14 @@ module.exports = class index {
         let { libraries } = json;
         let downloader = new download();
         let files = [];
+        let check = 0;
         let size = 0;
 
         for (let lib of libraries) {
-            if (lib.rules) continue
+            if (lib.rules) {
+                this.emit('check', check++, libraries.length, 'libraries');
+                continue;
+            }
             let file = {}
             let libInfo = getPathLibraries(lib.name);
             let pathLib = path.resolve(this.pathLibraries, libInfo.path);
@@ -75,6 +79,7 @@ module.exports = class index {
                 }
                 files.push(file);
             }
+            this.emit('check', check++, libraries.length, 'libraries');
         }
 
         if (files.length > 0) {
