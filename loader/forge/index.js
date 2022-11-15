@@ -148,6 +148,8 @@ module.exports = class index {
 
     async downloadLibraries(profile, skipForgeFilter) {
         let { libraries } = profile.version;
+        let downloader = new download();
+        let check = 0;
         let files = [];
         let size = 0;
 
@@ -156,13 +158,19 @@ module.exports = class index {
         libraries = libraries.filter((library, index, self) => index === self.findIndex(t => t.name === library.name))
 
         let skipForge = [
-            'net.minecraftforge:forge',
+            'net.minecraftforge:forge:',
             'net.minecraftforge:minecraftforge:'
         ]
 
         for (let lib of libraries) {
-            if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) continue
-            if (lib.rules) continue
+            if (skipForgeFilter && skipForge.find(libs => lib.name.includes(libs))) {
+                this.emit('check', check++, libraries.length, 'libraries');
+                continue;
+            }
+            if (lib.rules) {
+                this.emit('check', check++, libraries.length, 'libraries');
+                continue;
+            }
             let file = {}
             let libInfo = getPathLibraries(lib.name);
             let pathLib = path.resolve(this.pathLibraries, libInfo.path);
@@ -171,22 +179,25 @@ module.exports = class index {
             if (!fs.existsSync(pathLibFile)) {
                 let url
                 let sizeFile = 0
-                for (let mirror of mirrors) {
-                    url = `${mirror}${libInfo.path}/${libInfo.name}`;
-                    let response = await new download().checkURL(url).then(res => res).catch(err => err);
-                    if (response.status === 200) {
-                        size += response.size;
-                        sizeFile = response.size;
-                        break
-                    } else if (lib.downloads?.artifact) {
-                        url = lib.downloads.artifact.url
-                        size += lib.downloads.artifact.size;
-                        sizeFile = lib.downloads.artifact.size;
-                        break
-                    } else url = null
+                
+                let baseURL = `${libInfo.path}/${libInfo.name}`;
+                let response = await downloader.checkMirror(baseURL, mirrors)
+                
+                if (response?.status === 200) {
+                    size += response.size;
+                    sizeFile = response.size;
+                    url = response.url;
+                } else if (lib.downloads?.artifact) {
+                    url = lib.downloads.artifact.url
+                    size += lib.downloads.artifact.size;
+                    sizeFile = lib.downloads.artifact.size;
+                } else {
+                    url = null
                 }
                 
-                if (!url) return { error: `Library ${lib.name} not found` };
+                if (url == null || !url) {
+                    return { error: `Impossible to download ${lib.name}` };
+                }
 
                 file = {
                     url: url,
@@ -195,14 +206,13 @@ module.exports = class index {
                     name: libInfo.name,
                     size: sizeFile
                 }
-                files.push(file);                
+                files.push(file);              
             }
+            this.emit('check', check++, libraries.length, 'libraries');
         }
 
         if (files.length > 0) {
-            let downloader = new download();
-
-            downloader.on("progress", (DL, totDL, file) => {
+            downloader.on("progress", (DL, totDL) => {
                 this.emit("progress", DL, totDL, 'libraries');
             });
             
@@ -221,6 +231,14 @@ module.exports = class index {
                 this.emit('progress', DL, totDL, file);
             });
 
+            patcher.on('patch', data => {
+                this.emit('patch', data);
+            });
+
+            patcher.on('error', data => {
+                this.emit('error', data);
+            });
+
             if (!this.options.loader.config) {
                 let java = await tool.downloadJava();
                 let minecraft = await tool.downloadMinecraftJar(java.JSON);
@@ -233,11 +251,10 @@ module.exports = class index {
                 }
             }
 
-
             await patcher.patcher(profile, config);
-
-            console.log(config)
         }
+
+        if(fs.existsSync(this.pathTemp)) fs.rmSync(this.pathTemp, { recursive: true });
         return true
     }
 }

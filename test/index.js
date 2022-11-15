@@ -5,8 +5,8 @@ let opt = {
     timeout: 10000,
     autoClean: false,
     loader: {
-        type: 'forge',
-        version: '1.19.2',
+        type: 'quilt',
+        version: '1.14.4',
         build: 'latest',
         config: false
     }
@@ -17,7 +17,7 @@ let loader = new loaderDownloader(opt);
 loader.install();
 
 loader.on('json', json => {
-    // console.log(json);
+    console.log(json);
 });
 
 loader.on('extract', extract => {
@@ -26,6 +26,10 @@ loader.on('extract', extract => {
 
 loader.on('progress', (progress, size, element) => {
     console.log(`Downloading ${element} ${Math.round((progress / size) * 100)}%`);
+});
+
+loader.on('check', (progress, size, element) => {
+    console.log(`Checking ${element} ${Math.round((progress / size) * 100)}%`);
 });
 
 loader.on('patch', patch => {

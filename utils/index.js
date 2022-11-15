@@ -81,7 +81,13 @@ class utils {
             }
         } else if (type === 'fabric') {
             return {
-                metaData: 'https://meta.fabricmc.net/v2/versions/game'
+                metaData: 'https://meta.fabricmc.net/v2/versions',
+                json: 'https://meta.fabricmc.net/v2/versions/loader/${version}/${build}/profile/json'
+            }
+        } else if (type === 'quilt') {
+            return {
+                metaData: 'https://meta.quiltmc.org/v3/versions',
+                json: 'https://meta.quiltmc.org/v3/versions/loader/${version}/${build}/profile/json'
             }
         }
     }
@@ -90,9 +96,9 @@ class utils {
 let utilsInstance = new utils();
 
 let mirrors = [
-    "https://maven.minecraftforge.net/",
-    "https://maven.creeperhost.net/",
-    "https://libraries.minecraft.net/"
+    "https://maven.minecraftforge.net",
+    "https://maven.creeperhost.net",
+    "https://libraries.minecraft.net"
 ]
 
 module.exports = {

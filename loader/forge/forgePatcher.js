@@ -54,16 +54,16 @@ module.exports = class forgePatcher {
                     );
                     
                     ps.stdout.on('data', data => {
-                        console.log(data.toString());
+                        this.emit('patch', data.toString('utf-8'))
                     });
                     
                     ps.stderr.on('data', data => {
-                        console.error(`ps stderr: ${data}`);
+                        this.emit('patch', data.toString('utf-8'))
                     });
                     
                     ps.on('close', code => {
                         if (code !== 0) {
-                            console.log(`process exited with code ${code}`);
+                            this.emit('error', `Forge patcher exited with code ${code}`);
                             resolve();
                         }
                         resolve();
