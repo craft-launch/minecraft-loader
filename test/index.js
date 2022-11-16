@@ -5,7 +5,7 @@ let opt = {
     timeout: 10000,
     autoClean: false,
     loader: {
-        type: 'quilt',
+        type: 'forge',
         version: '1.14.4',
         build: 'latest',
         config: false
