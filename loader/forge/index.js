@@ -42,7 +42,7 @@ module.exports = class index {
             build = this.options.loader.build;
         }
 
-        metaData = metaData.filter(b => b === build)[0];
+        metaData = metaData.filter(b => b.includes(build))[0];
         if (!metaData) return { error: `Build ${build} not found` };
 
         forgeURL = forgeURL.replace(/\${version}/g, metaData);

@@ -5,6 +5,7 @@
 
 const spawn = require('child_process').spawn;
 const path = require('path');
+const fs = require('fs');
 
 const { getPathLibraries, extractAll } = require('../../utils');
 
@@ -25,52 +26,84 @@ module.exports = class forgePatcher {
 
     async patcher(profile, config) {
         let { processors } = profile;
-        
+
+        if (!this.check(profile)) {
+            for (let key in processors) {
+                if (Object.prototype.hasOwnProperty.call(processors, key)) {
+                    let processor = processors[key];
+                    if (processor?.sides && !(processor?.sides || []).includes('client')) {
+                        continue;
+                    }
+    
+                    let jar = getPathLibraries(processor.jar)
+                    let filePath = path.resolve(this.pathLibraries, jar.path, jar.name)
+    
+                    let args = processor.args.map(arg => this.setArgument(arg, profile, config)).map(arg => this.computePath(arg));
+                    let classPaths = processor.classpath.map(cp => {
+                        let classPath = getPathLibraries(cp)
+                        return `"${path.join(this.pathLibraries, `${classPath.path}/${classPath.name}`)}"`
+                    });
+                    let mainClass = await this.readJarManifest(filePath, 'Main-Class');
+    
+                    await new Promise(resolve => {
+                        const ps = spawn(
+                            config.java,
+                            [
+                                '-classpath',
+                                [`"${filePath}"`, ...classPaths].join(path.delimiter),
+                                mainClass,
+                                ...args
+                            ],{ shell: true }
+                        );
+                        
+                        ps.stdout.on('data', data => {
+                            this.emit('patch', data.toString('utf-8'))
+                        });
+                        
+                        ps.stderr.on('data', data => {
+                            this.emit('patch', data.toString('utf-8'))
+                        });
+                        
+                        ps.on('close', code => {
+                            if (code !== 0) {
+                                this.emit('error', `Forge patcher exited with code ${code}`);
+                                resolve();
+                            }
+                            resolve();
+                        });
+                    });
+                }
+            }
+        }
+    }
+
+    check(profile) {
+        let files = [];
+        let { processors } = profile;
+
         for (let key in processors) {
             if (Object.prototype.hasOwnProperty.call(processors, key)) {
                 let processor = processors[key];
-                if (processor?.sides && !(processor?.sides || []).includes('client')) {
-                    continue;
-                }
-                let jar = getPathLibraries(processor.jar)
-                let filePath = path.resolve(this.pathLibraries, jar.path, jar.name)
+                if (processor?.sides && !(processor?.sides || []).includes('client')) continue;
 
-                let args = processor.args.map(arg => this.setArgument(arg, profile, config)).map(arg => this.computePath(arg));
-                let classPaths = processor.classpath.map(cp => {
-                    let classPath = getPathLibraries(cp)
-                    return `"${path.join(this.pathLibraries, `${classPath.path}/${classPath.name}`)}"`
-                });
-                let mainClass = await this.readJarManifest(filePath, 'Main-Class');
-
-                await new Promise(resolve => {
-                    const ps = spawn(
-                        config.java,
-                        [
-                            '-classpath',
-                            [`"${filePath}"`, ...classPaths].join(path.delimiter),
-                            mainClass,
-                            ...args
-                        ],{ shell: true }
-                    );
-                    
-                    ps.stdout.on('data', data => {
-                        this.emit('patch', data.toString('utf-8'))
-                    });
-                    
-                    ps.stderr.on('data', data => {
-                        this.emit('patch', data.toString('utf-8'))
-                    });
-                    
-                    ps.on('close', code => {
-                        if (code !== 0) {
-                            this.emit('error', `Forge patcher exited with code ${code}`);
-                            resolve();
-                        }
-                        resolve();
-                    });
-                });
+                processor.args.map(arg => {
+                    let finalArg = arg.replace('{', '').replace('}', '');
+                    if (profile.data[finalArg]) {
+                        if (finalArg === 'BINPATCH') return
+                        files.push(profile.data[finalArg].client)
+                    }
+                })
             }
         }
+
+        files = files.filter((item, index) => files.indexOf(item) === index);
+        
+        for (let file of files) {
+            let libMCP = getPathLibraries(file.replace('[', '').replace(']', ''))
+            file = `${path.resolve(this.pathLibraries, `${libMCP.path}/${libMCP.name}`)}`;
+            if (!fs.existsSync(file)) return false
+        }
+        return true;
     }
     
     setArgument(arg, profile, config) {
@@ -78,7 +111,7 @@ module.exports = class forgePatcher {
         let universalPath = profile.libraries.find(v =>
             (v.name || '').startsWith('net.minecraftforge:forge')
         )
-        
+
         if (profile.data[finalArg]) {
             if (finalArg === 'BINPATCH') {
                 let clientdata = getPathLibraries(profile.path || universalPath.name)
