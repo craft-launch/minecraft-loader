@@ -1,8 +1,3 @@
-/**
- * @author Luuxis
- * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0/
- */
-
 const spawn = require('child_process').spawn;
 const path = require('path');
 const fs = require('fs');
