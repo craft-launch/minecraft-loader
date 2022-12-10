@@ -1,8 +1,3 @@
-/**
- * @author gorilla-devs
- * @license GPL 3.0 - https://github.com/gorilla-devs/GDLauncher/blob/master/LICENSE
- */
-
 const spawn = require('child_process').spawn;
 const path = require('path');
 const fs = require('fs');

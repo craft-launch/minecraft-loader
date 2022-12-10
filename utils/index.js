@@ -1,8 +1,3 @@
-/**
- * @author Luuxis
- * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0/
- */
-
 const crypto = require('crypto');
 const nodeFetch = require('node-fetch');
 const { extractFull } = require('node-7z');
