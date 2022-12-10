@@ -5,12 +5,13 @@
 
 const spawn = require('child_process').spawn;
 const path = require('path');
+const fs = require('fs');
 
 const { getPathLibraries, extractAll } = require('../../utils');
 
 const eventEmitter = require('events').EventEmitter;
 
- 
+
 module.exports = class forgePatcher {
     constructor(options) {
         this.options = options;
@@ -25,13 +26,14 @@ module.exports = class forgePatcher {
 
     async patcher(profile, config) {
         let { processors } = profile;
-        
+
         for (let key in processors) {
             if (Object.prototype.hasOwnProperty.call(processors, key)) {
                 let processor = processors[key];
                 if (processor?.sides && !(processor?.sides || []).includes('client')) {
                     continue;
                 }
+
                 let jar = getPathLibraries(processor.jar)
                 let filePath = path.resolve(this.pathLibraries, jar.path, jar.name)
 
@@ -50,17 +52,17 @@ module.exports = class forgePatcher {
                             [`"${filePath}"`, ...classPaths].join(path.delimiter),
                             mainClass,
                             ...args
-                        ],{ shell: true }
+                        ], { shell: true }
                     );
-                    
+
                     ps.stdout.on('data', data => {
                         this.emit('patch', data.toString('utf-8'))
                     });
-                    
+
                     ps.stderr.on('data', data => {
                         this.emit('patch', data.toString('utf-8'))
                     });
-                    
+
                     ps.on('close', code => {
                         if (code !== 0) {
                             this.emit('error', `Forge patcher exited with code ${code}`);
@@ -71,14 +73,44 @@ module.exports = class forgePatcher {
                 });
             }
         }
+
     }
-    
+
+    check(profile) {
+        let files = [];
+        let { processors } = profile;
+
+        for (let key in processors) {
+            if (Object.prototype.hasOwnProperty.call(processors, key)) {
+                let processor = processors[key];
+                if (processor?.sides && !(processor?.sides || []).includes('client')) continue;
+
+                processor.args.map(arg => {
+                    let finalArg = arg.replace('{', '').replace('}', '');
+                    if (profile.data[finalArg]) {
+                        if (finalArg === 'BINPATCH') return
+                        files.push(profile.data[finalArg].client)
+                    }
+                })
+            }
+        }
+
+        files = files.filter((item, index) => files.indexOf(item) === index);
+
+        for (let file of files) {
+            let libMCP = getPathLibraries(file.replace('[', '').replace(']', ''))
+            file = `${path.resolve(this.pathLibraries, `${libMCP.path}/${libMCP.name}`)}`;
+            if (!fs.existsSync(file)) return false
+        }
+        return true;
+    }
+
     setArgument(arg, profile, config) {
         let finalArg = arg.replace('{', '').replace('}', '');
         let universalPath = profile.libraries.find(v =>
             (v.name || '').startsWith('net.minecraftforge:forge')
         )
-        
+
         if (profile.data[finalArg]) {
             if (finalArg === 'BINPATCH') {
                 let clientdata = getPathLibraries(profile.path || universalPath.name)
@@ -88,14 +120,14 @@ module.exports = class forgePatcher {
             }
             return profile.data[finalArg].client;
         }
-        
+
         return arg
-        .replace('{SIDE}', `client`)
-        .replace('{ROOT}', `"${path.dirname(path.resolve(this.options.path, 'forge'))}"`)
-        .replace('{MINECRAFT_JAR}', `"${config.minecraft}"`)
-        .replace('{MINECRAFT_VERSION}', `"${config.minecraftJson}"`)
-        .replace('{INSTALLER}', `"${this.pathLibraries}"`)
-        .replace('{LIBRARY_DIR}', `"${this.pathLibraries}"`);
+            .replace('{SIDE}', `client`)
+            .replace('{ROOT}', `"${path.dirname(path.resolve(this.options.path, 'forge'))}"`)
+            .replace('{MINECRAFT_JAR}', `"${config.minecraft}"`)
+            .replace('{MINECRAFT_VERSION}', `"${config.minecraftJson}"`)
+            .replace('{INSTALLER}', `"${this.pathLibraries}"`)
+            .replace('{LIBRARY_DIR}', `"${this.pathLibraries}"`);
     }
 
     computePath(arg) {
@@ -105,15 +137,14 @@ module.exports = class forgePatcher {
         }
         return arg;
     }
-    
+
     async readJarManifest(jarPath, property) {
         let { extraction } = await extractAll(jarPath, this.pathTemp, {
             toStdout: true,
             $cherryPick: 'META-INF/MANIFEST.MF'
         });
-      
+
         if (extraction.info.has(property)) return extraction.info.get(property);
         return null;
     }
 }
-

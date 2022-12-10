@@ -4,7 +4,6 @@
  */
 
 const fs = require('fs');
-const axios = require('axios');
 const nodeFetch = require('node-fetch');
 const eventEmitter = require('events').EventEmitter;
 
@@ -17,22 +16,22 @@ module.exports = class download {
     async downloadFile(url, path, fileName) {
         if (!fs.existsSync(path)) fs.mkdirSync(path, { recursive: true });
         const writer = fs.createWriteStream(path + '/' + fileName);
-        const response = await axios.get(url, { responseType: 'stream' });
-        const size = response.headers['content-length'];
+        const response = await nodeFetch(url);
+        const size = response.headers.get('content-length');
         let downloaded = 0;
         return new Promise((resolve, reject) => {
-            response.data.on('data', (chunk) => {
+            response.body.on('data', (chunk) => {
                 downloaded += chunk.length;
                 this.emit('progress', downloaded, size);
                 writer.write(chunk);
             });
 
-            response.data.on('end', () => {
+            response.body.on('end', () => {
                 writer.end();
                 resolve();
             });
 
-            response.data.on('error', (err) => {
+            response.body.on('error', (err) => {
                 this.emit('error', err);
                 reject(err);
             });
@@ -69,21 +68,21 @@ module.exports = class download {
                 let file = files[queued];
                 queued++;
                 if (!fs.existsSync(file.foler)) fs.mkdirSync(file.folder, { recursive: true });
-                const writer = fs.createWriteStream(file.folder + '/' + file.name);
-                const response = await axios.get(file.url, { responseType: 'stream' });
-                response.data.on('data', (chunk) => {
+                const writer = fs.createWriteStream(file.path);
+                const response = await nodeFetch(file.url);
+                response.body.on('data', (chunk) => {
                     downloaded += chunk.length;
                     this.emit('progress', downloaded, size);
                     writer.write(chunk);
                 });
 
-                response.data.on('end', () => {
+                response.body.on('end', () => {
                     writer.end();
                     completed++;
                     downloadNext();
                 });
 
-                response.data.on('error', (err) => {
+                response.body.on('error', (err) => {
                     this.emit('error', err);
                 });
             }

@@ -3,10 +3,10 @@ const loaderDownloader = require('../index');
 let opt = {
     path: './.MC',
     timeout: 10000,
-    autoClean: false,
+    autoClean: true,
     loader: {
-        type: 'quilt',
-        version: '1.14.4',
+        type: 'forge',
+        version: '1.19.3',
         build: 'latest',
         config: false
     }
