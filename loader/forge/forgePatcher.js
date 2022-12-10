@@ -1,6 +1,6 @@
 /**
- * @author Luuxis
- * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0/
+ * @author gorilla-devs
+ * @license GPL 3.0 - https://github.com/gorilla-devs/GDLauncher/blob/master/LICENSE
  */
 
 const spawn = require('child_process').spawn;
