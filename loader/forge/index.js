@@ -42,7 +42,7 @@ module.exports = class index {
             build = this.options.loader.build;
         }
 
-        metaData = metaData.filter(b => b.includes(build))[0];
+        metaData = metaData.filter(b => b === build)[0];
         if (!metaData) return { error: `Build ${build} not found` };
 
         forgeURL = forgeURL.replace(/\${version}/g, metaData);
@@ -123,7 +123,7 @@ module.exports = class index {
                     if (!fs.existsSync(pathFileDest)) fs.mkdirSync(pathFileDest, { recursive: true });
                     fs.copyFileSync(pathFile, `${pathFileDest}/${file}`);
                 })
-            ); 
+            );
         } else {
             skipForgeFilter = false
         }
@@ -134,9 +134,9 @@ module.exports = class index {
             })
 
             let client = path.resolve(this.pathTemp, 'data/client.lzma');
-            let fileInfo = getPathLibraries(profile.path || universalPath.name, '-clientdata' , '.lzma')
+            let fileInfo = getPathLibraries(profile.path || universalPath.name, '-clientdata', '.lzma')
             let pathFile = path.resolve(this.pathLibraries, fileInfo.path)
-            
+
             if (!fs.existsSync(pathFile)) fs.mkdirSync(pathFile, { recursive: true });
             fs.copyFileSync(client, `${pathFile}/${fileInfo.name}`);
             this.emit('extract', `Extracting ${fileInfo.name}...`);
@@ -179,10 +179,10 @@ module.exports = class index {
             if (!fs.existsSync(pathLibFile)) {
                 let url
                 let sizeFile = 0
-                
+
                 let baseURL = `${libInfo.path}/${libInfo.name}`;
                 let response = await downloader.checkMirror(baseURL, mirrors)
-                
+
                 if (response?.status === 200) {
                     size += response.size;
                     sizeFile = response.size;
@@ -194,7 +194,7 @@ module.exports = class index {
                 } else {
                     url = null
                 }
-                
+
                 if (url == null || !url) {
                     return { error: `Impossible to download ${lib.name}` };
                 }
@@ -206,7 +206,7 @@ module.exports = class index {
                     name: libInfo.name,
                     size: sizeFile
                 }
-                files.push(file);              
+                files.push(file);
             }
             this.emit('check', check++, libraries.length, 'libraries');
         }
@@ -215,7 +215,7 @@ module.exports = class index {
             downloader.on("progress", (DL, totDL) => {
                 this.emit("progress", DL, totDL, 'libraries');
             });
-            
+
             await downloader.downloadFileMultiple(files, size, 10);
         }
         return libraries
@@ -239,22 +239,52 @@ module.exports = class index {
                 this.emit('error', data);
             });
 
-            if (!this.options.loader.config) {
-                let java = await tool.downloadJava();
-                let minecraft = await tool.downloadMinecraftJar(java.JSON);
-                if (!fs.existsSync(minecraft.json)) fs.writeFileSync(minecraft.json, JSON.stringify(java.JSON, null, 4));
+            if (!patcher.check(profile)) {
+                if (!this.options.loader.config) {
+                    let java = await tool.downloadJava();
+                    let minecraft = await tool.downloadMinecraftJar(java.JSON);
+                    if (!fs.existsSync(minecraft.json)) fs.writeFileSync(minecraft.json, JSON.stringify(java.JSON, null, 4));
 
-                config = {
-                    java: path.resolve(this.options.path, 'runtime', java.java, 'bin', 'java'),
-                    minecraft: minecraft.jar,
-                    minecraftJson: minecraft.json,
+                    config = {
+                        java: path.resolve(this.options.path, 'runtime', java.java, 'bin', 'java'),
+                        minecraft: minecraft.jar,
+                        minecraftJson: minecraft.json,
+                    }
+                } else {
+                    config = {
+                        java: this.options.loader.config.java,
+                        minecraft: this.options.loader.config.minecraft,
+                        minecraftJson: this.options.loader.config.minecraftJson
+                    }
+
+                    if (!fs.existsSync(config.java)) {
+                        return { error: `Impossible to find java at ${config.java}` };
+                    }
+                    if (!fs.existsSync(config.minecraft)) {
+                        return { error: `Impossible to find minecraft at ${config.minecraft}` };
+                    }
+                    if (!fs.existsSync(config.minecraftJson)) {
+                        return { error: `Impossible to find minecraft json at ${config.minecraftJson}` };
+                    }
+
+                    this.options.autoClean = false;
                 }
+
+                await patcher.patcher(profile, config);
             }
 
-            await patcher.patcher(profile, config);
+            if (this.options.autoClean) {
+                if (fs.existsSync(path.resolve(this.options.path, 'runtime'))) {
+                    fs.rmSync(path.resolve(this.options.path, 'runtime'), { recursive: true });
+                }
+                if (fs.existsSync(path.resolve(this.pathVersions, this.versionMinecraft))) {
+                    console.log('clean')
+                    fs.rmSync(path.resolve(this.pathVersions, this.versionMinecraft), { recursive: true });
+                }
+            }
         }
 
-        if(fs.existsSync(this.pathTemp)) fs.rmSync(this.pathTemp, { recursive: true });
+        if (fs.existsSync(this.pathTemp)) fs.rmSync(this.pathTemp, { recursive: true });
         return true
     }
 }
