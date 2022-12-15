@@ -1,4 +1,4 @@
-const loaderDownloader = require('../index');
+import loaderDownloader from 'minecraft-loader';
 
 let opt = {
     path: './.MC',
@@ -6,7 +6,7 @@ let opt = {
     autoClean: true,
     loader: {
         type: 'forge',
-        version: '1.19.3',
+        version: '1.12.2',
         build: 'latest',
         config: false
     }
