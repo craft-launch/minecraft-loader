@@ -1,8 +1,13 @@
 {
     "name": "minecraft-loader",
-    "version": "1.0.0-beta.5",
+    "version": "1.0.0",
     "description": "",
-    "main": "index.js",
+    "exports": {
+        ".": {
+            "import": "./index.mjs",
+            "require": "./src/index.js"
+        }
+    },
     "keywords": [],
     "author": "Luuxis",
     "license": "GPL-3.0",
@@ -10,10 +15,10 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "files": [
-        "loader/**",
-        "utils/**",
-        "index.js",
-        "README.md"
+        "src/**",
+        "index.mjs",
+        "README.md",
+        "LICENSE"
     ],
     "dependencies": {
         "7zip-bin": "^5.2.0",

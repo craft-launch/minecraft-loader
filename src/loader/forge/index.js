@@ -247,8 +247,8 @@ module.exports = class index {
                     }
                 } else {
                     config = {
-                        java: this.options.loader.config.java,
-                        minecraft: this.options.loader.config.minecraft,
+                        java: this.options.loader.config.javaPath,
+                        minecraft: this.options.loader.config.minecraftJar,
                         minecraftJson: this.options.loader.config.minecraftJson
                     }
 
