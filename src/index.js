@@ -10,10 +10,10 @@ const Quilt = require('./loader/quilt');
 class index {
     constructor(options = {}) {
         this.options = options;
-        this.path = path.resolve(this.options.path);
-        this.pathLibraries = path.resolve(this.path, 'libraries');
-        this.pathVersions = path.resolve(this.path, 'versions');
-        this.pathTemp = path.resolve(this.path, 'temp');
+        this.path = path.resolve(this.options.path).replace(/\\/g, '/');
+        this.pathLibraries = path.resolve(this.path, 'libraries').replace(/\\/g, '/');
+        this.pathVersions = path.resolve(this.path, 'versions').replace(/\\/g, '/');
+        this.pathTemp = path.resolve(this.path, 'temp').replace(/\\/g, '/');
         this.on = eventEmitter.prototype.on;
         this.emit = eventEmitter.prototype.emit;
     }

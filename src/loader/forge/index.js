@@ -10,10 +10,10 @@ module.exports = class index {
     constructor(options = {}) {
         this.options = options;
         this.versionMinecraft = this.options.loader.version;
-        this.path = path.resolve(this.options.path);
-        this.pathLibraries = path.resolve(this.path, 'libraries');
-        this.pathVersions = path.resolve(this.path, 'versions');
-        this.pathTemp = path.resolve(this.path, 'temp');
+        this.path = path.resolve(this.options.path).replace(/\\/g, '/');
+        this.pathLibraries = path.resolve(this.path, 'libraries').replace(/\\/g, '/');
+        this.pathVersions = path.resolve(this.path, 'versions').replace(/\\/g, '/');
+        this.pathTemp = path.resolve(this.path, 'temp').replace(/\\/g, '/');
         this.on = eventEmitter.prototype.on;
         this.emit = eventEmitter.prototype.emit;
     }
@@ -71,11 +71,10 @@ module.exports = class index {
     async extractProfile(pathInstaller) {
         let forgeJSON = {}
 
-        await extractAll(pathInstaller, this.pathTemp, { $cherryPick: 'install_profile.json' });
+        await extractAll(pathInstaller, this.pathTemp);
 
-        let file = fs.readFileSync(path.resolve(this.pathTemp, 'install_profile.json'));
+        let file = fs.readFileSync(path.resolve(this.pathTemp, 'install_profile.json'), 'utf8');
         let forgeJsonOrigin = JSON.parse(file);
-
 
         if (!forgeJsonOrigin) return { error: { message: 'Invalid forge installer' } };
         if (forgeJsonOrigin.install) {
@@ -211,7 +210,7 @@ module.exports = class index {
                 this.emit("progress", DL, totDL, 'libraries');
             });
 
-            await downloader.downloadFileMultiple(files, size, 10);
+            await downloader.downloadFileMultiple(files, size, this.options.downloadFileMultiple);
         }
         return libraries
     }

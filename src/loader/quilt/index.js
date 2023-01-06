@@ -8,9 +8,9 @@ module.exports = class index {
     constructor(options = {}) {
         this.options = options;
         this.versionMinecraft = this.options.loader.version;
-        this.path = path.resolve(this.options.path);
-        this.pathLibraries = path.resolve(this.path, 'libraries');
-        this.pathVersions = path.resolve(this.path, 'versions');
+        this.path = path.resolve(this.options.path).replace(/\\/g, '/');
+        this.pathLibraries = path.resolve(this.path, 'libraries').replace(/\\/g, '/');
+        this.pathVersions = path.resolve(this.path, 'versions').replace(/\\/g, '/');
         this.on = eventEmitter.prototype.on;
         this.emit = eventEmitter.prototype.emit;
     }
@@ -82,7 +82,7 @@ module.exports = class index {
                 this.emit("progress", DL, totDL, 'libraries');
             });
 
-            await downloader.downloadFileMultiple(files, size, 10);
+            await downloader.downloadFileMultiple(files, size, this.options.downloadFileMultiple);
         }
         return libraries
     }

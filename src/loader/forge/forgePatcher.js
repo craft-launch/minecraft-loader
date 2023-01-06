@@ -37,7 +37,7 @@ module.exports = class forgePatcher {
                     let classPath = getPathLibraries(cp)
                     return `"${path.join(this.pathLibraries, `${classPath.path}/${classPath.name}`)}"`
                 });
-                let mainClass = await this.readJarManifest(filePath, 'Main-Class');
+                let mainClass = await this.readJarManifest(filePath);
 
                 await new Promise(resolve => {
                     const ps = spawn(
@@ -133,13 +133,10 @@ module.exports = class forgePatcher {
         return arg;
     }
 
-    async readJarManifest(jarPath, property) {
-        let { extraction } = await extractAll(jarPath, this.pathTemp, {
-            toStdout: true,
-            $cherryPick: 'META-INF/MANIFEST.MF'
-        });
+    async readJarManifest(jarPath) {
+        let extraction = await extractAll(jarPath, this.pathTemp, 'META-INF/MANIFEST.MF');
 
-        if (extraction.info.has(property)) return extraction.info.get(property);
+        if (extraction) return extraction;
         return null;
     }
 }

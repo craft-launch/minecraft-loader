@@ -62,8 +62,8 @@ module.exports = class download {
             if (queued < files.length) {
                 let file = files[queued];
                 queued++;
-                if (!fs.existsSync(file.foler)) fs.mkdirSync(file.folder, { recursive: true });
-                const writer = fs.createWriteStream(file.path);
+                if (!fs.existsSync(file.foler)) fs.mkdirSync(file.folder, { recursive: true, mode: 0o777 });
+                const writer = fs.createWriteStream(file.path, { flags: 'w', mode: 0o777 });
                 const response = await nodeFetch(file.url);
                 response.body.on('data', (chunk) => {
                     downloaded += chunk.length;

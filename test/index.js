@@ -6,8 +6,8 @@ let opt = {
     autoClean: true,
     loader: {
         type: 'forge',
-        version: '1.12.2',
-        build: 'latest',
+        version: '1.16.5',
+        build: 'recommended',
         config: false
     }
 }

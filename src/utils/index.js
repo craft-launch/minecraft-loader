@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const nodeFetch = require('node-fetch');
-const { extractFull } = require('node-7z');
-const { path7za } = require('7zip-bin');
+const admZip = require('adm-zip');
 const fs = require('fs');
 
 const download = require('./download');
@@ -41,29 +40,32 @@ class utils {
         };
     }
 
-
-    async extractAll(source, destination, args = {}) {
+    async extractAll(source, destination, veryfy = null) {
         if (!fs.existsSync(destination)) fs.mkdirSync(destination, { recursive: true });
-        const extraction = extractFull(source, destination, {
-            ...args,
-            yes: true,
-            $bin: path7za,
-            $spawnOptions: { shell: true }
-        });
 
-        let extractedParentDir = null;
-        await new Promise((resolve, reject) => {
-            extraction.on('data', data => {
-                if (!extractedParentDir) {
-                    [extractedParentDir] = data.file.split('/');
+        let zip = new admZip(source);
+        let entries = zip.getEntries();
+
+        return new Promise(resolve => {
+            for (let entry of entries) {
+                if (entry.isDirectory) {
+                    if (entry.entryName.startsWith("META-INF")) continue;
+                    fs.mkdirSync(`${destination}/${entry.entryName}`, { recursive: true, mode: 0o777 });
+                    continue
                 }
-            });
-            extraction.on('end', () => {
-                resolve(extractedParentDir);
-            });
+
+                if (entry.entryName.startsWith("META-INF")) {
+                    if (veryfy !== entry.entryName) continue;
+                    let data = zip.readFile(entry).toString();
+                    veryfy = data.split('Main-Class: ')[1].split('\r\n')[0];
+                    continue;
+                }
+
+                zip.extractEntryTo(entry, destination, true, true);
+            }
+            resolve(veryfy);
         });
-        return { extraction };
-    };
+    }
 
     loader(type) {
         if (type === 'forge') {
