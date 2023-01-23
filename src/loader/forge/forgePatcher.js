@@ -41,7 +41,7 @@ module.exports = class forgePatcher {
 
                 await new Promise(resolve => {
                     const ps = spawn(
-                        config.java,
+                        `"${path.resolve(config.java)}"`,
                         [
                             '-classpath',
                             [`"${filePath}"`, ...classPaths].join(path.delimiter),
