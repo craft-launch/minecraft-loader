@@ -190,7 +190,7 @@ module.exports = class index {
                 }
 
                 if (url == null || !url) {
-                    return { error: `Impossible to download ${lib.name}` };
+                    return { error: `Impossible to download ${libInfo.name}` };
                 }
 
                 file = {
