@@ -20,6 +20,7 @@ module.exports = class index {
 
     async donwloadInstaller(Loader) {
         let metaData = (await nodeFetch(Loader.metaData).then(res => res.json()))[this.versionMinecraft];
+        let AvailableBuilds = metaData;
         let forgeURL = Loader.install
         if (!metaData) return { error: `Forge ${this.versionMinecraft} not found` };
 
@@ -38,7 +39,7 @@ module.exports = class index {
         }
 
         metaData = metaData.filter(b => b === build)[0];
-        if (!metaData) return { error: `Build ${build} not found` };
+        if (!metaData) return { error: `Build ${build} not found, Available builds: ${AvailableBuilds.join(', ')}` };
 
         forgeURL = forgeURL.replace(/\${version}/g, metaData);
         let urlMeta = Loader.meta.replace(/\${build}/g, metaData);
