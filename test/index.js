@@ -5,9 +5,9 @@ let opt = {
     timeout: 10000,
     autoClean: true,
     loader: {
-        type: 'forge',
-        version: '1.16.5',
-        build: '1.16.5-36.0.0',
+        type: 'quilt',
+        version: '23w06a',
+        build: '0.16.0-beta.1',
         config: false
     }
 }

@@ -22,7 +22,7 @@ module.exports = class index {
         let metaData = (await nodeFetch(Loader.metaData).then(res => res.json()))[this.versionMinecraft];
         let AvailableBuilds = metaData;
         let forgeURL = Loader.install
-        if (!metaData) return { error: `Forge ${this.versionMinecraft} not found` };
+        if (!metaData) return { error: `Forge ${this.versionMinecraft} not supported` };
 
         let build
         if (this.options.loader.build === 'latest') {

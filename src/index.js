@@ -34,9 +34,11 @@ class index {
             if (fabric.error) return this.emit('error', fabric);
             this.emit('json', fabric);
         } else if (this.options.loader.type === 'quilt') {
-            let quilt = await this.fabric(Loader);
+            let quilt = await this.quilt(Loader);
             if (quilt.error) return this.emit('error', quilt);
             this.emit('json', quilt);
+        } else {
+            return this.emit('error', { error: `Loader ${this.options.loader.type} not found` });
         }
     }
 
@@ -111,7 +113,7 @@ class index {
         return json;
     }
 
-    async fabric(Loader) {
+    async quilt(Loader) {
         let quilt = new Quilt(this.options);
 
         // set event
