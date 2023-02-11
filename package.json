@@ -22,7 +22,7 @@
     ],
     "dependencies": {
         "adm-zip": "^0.5.10",
-        "node-fetch": "^2.6.7"
+        "node-fetch": "^2.6.9"
     },
     "bugs": {
         "url": "https://github.com/craft-launch/minecraft-loader/issues"
