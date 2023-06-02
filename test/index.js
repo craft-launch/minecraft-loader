@@ -8,6 +8,7 @@ let opt = {
         type: 'quilt',
         version: '23w06a',
         build: '0.16.0-beta.1',
+        build: 'latest',
         config: false
     }
 }
